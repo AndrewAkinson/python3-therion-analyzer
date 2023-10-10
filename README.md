@@ -1,4 +1,4 @@
-## Python code to analyze survex data source file(s)
+## Python code to analyze survex data source files
 
 _Current version:_
 
