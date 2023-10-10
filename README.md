@@ -11,7 +11,7 @@ survex data source files (`.svx` file trees), walking through the
 include statements and extracting all the starred commands such as
 begin...end statements, station fixes, entrance tags, and co-ordinate
 system declarations.  The extracted data is returned as a pandas
-dataframe which can be exported to a spreadsheet (wrapper code).
+dataframe which can be exported to a spreadsheet (see wrapper code).
 
 An example survex data source file tree for the Dow-Prov system can be
 found in the example directory of companion repository
