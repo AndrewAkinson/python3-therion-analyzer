@@ -75,23 +75,25 @@ for example
 df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
 ```
 
-The full specification of the relevant module functions is as follows.  To instantiate use
+The full specification of the relevant functions is as follows.  To instantiate use
 
 ```python
-Analyzer(use_extra=False, comment_char=';')
+import survex_analyzer as sa
+...
+analyzer = sa.Analyzer(use_extra=False, comment_char=';', keyword_char='*')
 ```
-Here, `use_extra` as already indicated adds some extra keywords,
-and `comment_char` allows the character used to separate comments in
-survex files to be specified if different from the default.
+Here, `use_extra` as already indicated adds some extra keywords, and
+`comment_char` and `keyword_char` allows these characters to be
+changed from the defaults.
 
 To analyse a file use
 ```python
-df = analyze(top_level_svx_file, trace=False, absolute_paths=False)
+df = analyzer.analyze(top_level_svx_file, trace=False, absolute_paths=False)
 ```
 Here, setting `trace=True` makes the function call be verbose about
-which files it is visitng, and `absolute_paths=True` reports absolute
-paths as file names, otherwise they file names are relative to the
-directory containing the top level survex file.
+which files it is visiting, and `absolute_paths=True` reports absolute
+paths rather than file names relative to the directory containing the
+top level survex file.
 
 #### With the command line tool
 
@@ -141,26 +143,25 @@ slurping the entire contents of the file and looking for decoding
 exceptions.  Currently the only encodings tested for are 'UTF-8',
 'ISO-8859-1' (aka Latin 1), and 'ASCII'.
 
-Another issue concerns the use of capitalisation for star commands
-(ignored by survex) versus file names (required on unix systems at
-least) and survex path itself (by default, forced to lower case by
-survex).  Thus `*Begin` is equally valid as `*begin`.  The parsing
-algorithm is designed to work around these issues BUT it is assumed
-that survey names are forced to lower case.
+Another issue concerns the use of capitalisation for keywords (ignored
+by survex), file names (required on unix systems at least) and survex
+path itself (by default, forced to lower case by survex).  Thus
+`*Begin` is equally valid as `*begin`.  The parsing algorithm is
+designed to work around these issues BUT it is assumed that survey
+names are forced to lower case.  Also there can be space between the
+keyword character and the keyword itself, so that `* begin` is the
+same as `*begin`, for instance.  Again the parser should handle this
+case transparently.
 
 Generally if a survex file can be successfully processed by `cavern`,
-then it ought to be parsable by the present scripts.  This has been
-checked against the Leck-Masongill data set, and the EaseGill-Pippikin
-data set, as well as the Dow-Prov example.  A final issue is that
-there should be NO spaces between the `*` and the survex command.
-Although this is something that seems to be tolerated by survex, it
-has not been implemented here.
+then it ought to be parsable by the present scripts.  The parser has
+been checked against the Leck-Masongill data set and the
+EaseGill-Pippikin data set, as well as the Dow-Prov example.
 
 ### Open issues
 
 * Intercept `*case preserve|toupper|tolower` and interpret accordingly.
-* Allow the keyword character to be specifiable, rather than assuming `*`.
-* Intercept `*set` commands, such keywords are not introduced by `*`.
+* Intercept `*set` commands, to set comment and keyword characters.
 
 If there are issues parsing survex files with these scripts, please
 let me know!  Also, feel free to request additional features.

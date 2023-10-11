@@ -80,9 +80,8 @@ class Analyzer:
                        'keyword':str, 'argument':str, 'full':str}
 
     # Use a stack to keep track of the include files - items on the
-    # stack are tuples of file paths and open file pointers.  The
-    # initial entry (None, None, ...) acts as a sentinel to stop
-    # the iteration.
+    # stack are tuples of file information.  The initial entry (None,
+    # None, ...) acts as a sentinel to stop the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
         if 'include' not in self.keywords: # this should always be present
@@ -135,4 +134,3 @@ class Analyzer:
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
         return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)
-
