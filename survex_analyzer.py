@@ -65,7 +65,7 @@ class Analyzer:
                  extra_keywords=['*export', '*date', '*flags']):
         self.keywords = (keywords + extra_keywords) if use_extra else keywords
         self.comment_char = comment_char
-        self.schema = {'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str}
+        self.schema = {'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'keyword':str, 'argument':str, 'full':str}
 
     # Use a stack to keep track of the include files - items on the
     # stack are tuples of file paths and open file pointers.  The

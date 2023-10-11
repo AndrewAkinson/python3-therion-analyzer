@@ -72,7 +72,7 @@ present already.  Usually though it will be better to stick with the
 default list of star commands and filter the resulting dataframe, using
 for example
 ```python
-df[(df['COMMAND'] == 'BEGIN') | (df['COMMAND'] == 'END')]
+df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
 ```
 
 The full specification of the relevant module functions is as follows.  To instantiate use
