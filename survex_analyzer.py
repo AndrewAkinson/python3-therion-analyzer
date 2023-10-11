@@ -43,7 +43,12 @@ def character_encoding(p):
 def extract_star_command(clean, star_commands):
     '''Extract a star command from a cleaned up line, returning None if not present'''
     commands = [star_command for star_command in star_commands if clean.lower().startswith(star_command)]
-    return clean.split()[0] if commands else None # this preserves case
+    if '*cs out' in commands: # special treatment because of the space
+        return ' '.join(clean.split()[:2]) # join the first two entries with a space (preserve case)
+    elif commands:
+        return clean.split()[0] # this preserves case
+    else:
+        return None
 
 class Analyzer:
 
@@ -52,7 +57,7 @@ class Analyzer:
     # changes are made to the 'row =' line below.
     
     def __init__(self,
-                 star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs', '*cs out', '*export', '*date', '*flags'],
+                 star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs out', '*cs', '*export', '*date', '*flags'],
                  schema={'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str},
                  comment_char=';'):
         self.star_commands = star_commands
@@ -76,16 +81,17 @@ class Analyzer:
         fp = p.open('r', encoding=encoding)
         if trace:
             print(f'Entering {p} ({encoding})')
+        line_number = 0 # keep track of the line numbers
         while fp: # will finish when the sentinel is encountered
-            line = fp.readline() # read the first line
-            line_number = 1 # and keep track of the line numbers
+            line = fp.readline() # read the next line
+            line_number = line_number + 1 # increment the line number counter
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
                 star_command = extract_star_command(clean, self.star_commands)
-                if star_command: # rejected if the none found
+                if star_command: # rejected if none found
                     argument = clean.removeprefix(star_command).strip() # again strip whitespace
-                    row = (p, line_number, encoding.upper(), '.'.join(svx_path),
+                    row = (p, encoding.upper(), line_number, '.'.join(svx_path),
                            star_command.removeprefix('*').upper(), argument, line.expandtabs())
                     if line.lower().startswith('*begin'): # process a begin statement (force lower case)
                         print('>> BEGIN encountered', p, line_number, '.'.join(svx_path), line)
@@ -108,6 +114,7 @@ class Analyzer:
                         fp = p.open('r', encoding=encoding)
                         if trace:
                             print(f'Entering {p} ({encoding})')
+                        line_number = 0 # reset the line number counter
                 line = fp.readline() # read the next line if there is one
                 line_number = line_number + 1 # and increment the line counter
             fp.close() # we ran out of lines for the file being currently processed
