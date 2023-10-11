@@ -45,7 +45,7 @@ def character_encoding(p):
     return encoding
 
 def extract_keyword(clean, keywords):
-    '''Extract a star command from a cleaned up line, returning None if not present'''
+    '''Extract a keyword from a cleaned up line, returning None if not present'''
     keyword_list = [keyword for keyword in keywords if clean.lower().startswith(keyword)]
     if '*cs out' in keyword_list: # special treatment because of the space
         return ' '.join(clean.split()[:2]) # join the first two entries with a space (preserve case)

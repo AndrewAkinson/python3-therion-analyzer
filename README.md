@@ -67,9 +67,9 @@ analyzer.keywords = ['*begin', '*end']
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
-Note that `*include` gets added to the list of commands if it is not
+Note that `*include` gets added to the list of keywords if it is not
 present already.  Usually though it will be better to stick with the
-default list of star commands and filter the resulting dataframe, using
+default list of keywords and filter the resulting dataframe, using
 for example
 ```python
 df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
@@ -80,7 +80,7 @@ The full specification of the relevant module functions is as follows.  To insta
 ```python
 Analyzer(use_extra=False, comment_char=';')
 ```
-Here, `use_extra` as already indicated adds some extra star commands,
+Here, `use_extra` as already indicated adds some extra keywords,
 and `comment_char` allows the character used to separate comments in
 survex files to be specified if different from the default.
 
@@ -118,7 +118,7 @@ options:
   -h, --help            show this help message and exit
   -t, --trace           be verbose about which files are visited
   -a, --absolute-paths  report absolute paths in spreadsheet
-  -e, --extra           include extra star commands
+  -e, --extra           include extra keywords
   -s, --silent          run silently
   -o OUTPUT, --output OUTPUT
                         optionally, output to spreadsheet (.ods, .xlsx)
