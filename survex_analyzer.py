@@ -66,8 +66,9 @@ def extract_keyword_arguments(clean, keywords, keyword_char):
 class Analyzer:
 
     # The idea is that we may wish to trim or augment the possible
-    # keywords being tracked.  The schema should be left alone unless
-    # matching changes are made to the 'row =' line below.
+    # keywords being tracked.  The schema is used to set the column
+    # titles and data types in the dataframe.  If it is changed,
+    # matching changes should be made to the 'row =' line below.
     
     def __init__(self, use_extra=False, comment_char=';', keyword_char='*',
                  keywords=['include', 'begin', 'end',
@@ -76,8 +77,8 @@ class Analyzer:
         self.keywords = (keywords + extra_keywords) if use_extra else keywords
         self.comment_char = comment_char
         self.keyword_char = keyword_char
-        self.schema = {'file':str, 'encoding':str, 'line':int, 'survex_path':str,
-                       'keyword':str, 'argument':str, 'full':str}
+        self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
+                       'argument(s)':str, 'path':str, 'full':str}
 
     # Use a stack to keep track of the include files - items on the
     # stack are tuples of file information.  The initial entry (None,
@@ -106,8 +107,8 @@ class Analyzer:
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
                 keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
-                    row = (p, encoding.upper(), line_number, '.'.join(svx_path),
-                           keyword.upper(), ' '.join(arguments), line.expandtabs())
+                    row = (p, encoding.upper(), line_number, keyword.upper(),
+                           ' '.join(arguments), '.'.join(svx_path), line.expandtabs())# for sanity, avoid tabs in the dataframe entries (!!)
                     if keyword.lower() == 'begin' and arguments: # process a begin statement (force lower case)
                         svx_path.append(arguments[0].lower()) # force lower case here (may be fixed in subsequent versions)
                         begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
