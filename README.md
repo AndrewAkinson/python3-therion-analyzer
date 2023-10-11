@@ -158,8 +158,9 @@ has not been implemented here.
 
 ### Open issues
 
-* Intercept `*case preserve|toupper|tolower` and interpret accordingly;
-* Intercept `*set` commands, in particular if keywords are not introduced by `*`.
+* Intercept `*case preserve|toupper|tolower` and interpret accordingly.
+* Allow the keyword character to be specifiable, rather than assuming `*`.
+* Intercept `*set` commands, such keywords are not introduced by `*`.
 
 ### Copying
 
