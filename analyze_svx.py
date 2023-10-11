@@ -27,7 +27,7 @@ import argparse
 import pandas as pd
 import survex_analyzer as sa
 
-parser = argparse.ArgumentParser(description='Analyze a survex data source.')
+parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
 parser.add_argument('svx_file', help='starting survex file (.svx)')
 parser.add_argument('-t', '--trace', action='store_true', help='report which files are visited')
 parser.add_argument('-a', '--absolute-paths', action='store_true', help='report absolute paths')
