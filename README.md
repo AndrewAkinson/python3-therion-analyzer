@@ -47,7 +47,7 @@ The dataframe has one row for each keyword that is tracked and contains columns 
 * the line number in the file;
 * the current survex path;
 * the actual keyword (`INCLUDE`, `BEGIN`, `END`, etc);
-* the argument following the keyword;
+* the argument(s) following the keyword;
 * the original line in the survex file.
 
 The default is to report details only for the following subset of
@@ -56,14 +56,14 @@ possible survex keywords: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
 `use_extra=True` then the keyword set is extended to include
 `*export`, `*date`, and `*flags` (this may be changed at a later date).
 
-Finer control can be achieved by modifying the `star_commands`
+Finer control can be achieved by modifying the `keywords`
 property of the instantiated object before running the analysis.  For
 example to look for just `*begin` and `*end` statements use
 ```python
 import survex_analyzer as sa
 ...
 analyzer = sa.Analyzer() # create an instance
-analyzer.star_commands = ['*begin', '*end']
+analyzer.keywords = ['*begin', '*end']
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
