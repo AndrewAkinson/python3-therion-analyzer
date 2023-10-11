@@ -8,8 +8,8 @@ v1.0 - initial working version
 
 This repository contains a python package and wrapper code to analyze
 survex data source file trees (`.svx` files), following the
-include statements and extracting star commands such as
-begin...end statements, station fixes, entrance tags, and co-ordinate
+`*include` statements and extracting star commands such as
+`*begin`...`*end` statements, station fixes, entrance tags, and co-ordinate
 system declarations.  The extracted data is returned as a pandas
 dataframe which can be exported to a spreadsheet (see wrapper code).
 
