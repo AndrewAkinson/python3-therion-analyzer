@@ -57,7 +57,7 @@ class Analyzer:
     # changes are made to the 'row =' line below.
     
     def __init__(self, use_extra=False, comment_char=';',
-                 star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs out', '*cs'],
+                 star_commands=['*include', '*begin', '*end', '*fix', '*entrance', '*equate', '*cs out', '*cs'],
                  extra_star_commands=['*export', '*date', '*flags']):
         self.star_commands = (star_commands + extra_star_commands) if use_extra else star_commands
         self.comment_char = comment_char

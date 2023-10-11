@@ -51,7 +51,7 @@ The dataframe has one row for each command and contains columns for:
 * the original line in the survex file.
 
 The default is to report details only for the following subset of
-possible survex commands: `*include`, `*begin`, `*end`, `*fix`,
+possible survex commands: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
 `*equate`, `*cs out`, and `*cs`.  If instantiated with the option
 `use_extra=True` then the command set is extended to include
 `*export`, `*date`, and `*flags`.
