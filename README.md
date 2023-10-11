@@ -1,4 +1,4 @@
-## Python code to analyze survex data source files
+## Python code to extract keywords from survex data source files
 
 _Current version:_
 
