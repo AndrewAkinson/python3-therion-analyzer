@@ -7,11 +7,11 @@ v1.0 - initial working version
 ### Summary
 
 This repository contains a python package and wrapper code to analyze
-survex data source file trees (`.svx` files), following the
-`*include` statements and extracting star commands such as
-`*begin`...`*end` statements, station fixes, entrance tags, and co-ordinate
-system declarations.  The extracted data is returned as a pandas
-dataframe which can be exported to a spreadsheet (see wrapper code).
+survex data source file trees (`.svx` files), following the `*include`
+statements and extracting keywords such as `*begin`...`*end`
+statements, station fixes, entrance tags, and co-ordinate system
+declarations.  The extracted data is returned as a pandas dataframe
+which can be exported to a spreadsheet (see wrapper code).
 
 An example survex data source file tree for the Dow-Prov system is
 given in the `example` directory.
@@ -40,20 +40,20 @@ df = analyzer.analyze(top_level_svx_file)
 The returned pandas dataframe can be further analysed programatically,
 or exported to a spreadsheet for inspection.
 
-The dataframe has one row for each command and contains columns for:
+The dataframe has one row for each keyword that is tracked and contains columns for:
 
 * the file name;
 * the detected character encoding of the file (UTF-8, ISO-8859-1, ASCII);
 * the line number in the file;
 * the current survex path;
-* the actual command (`INCLUDE`, `BEGIN`, `END`, etc);
-* the argument of the command;
+* the actual keyword (`INCLUDE`, `BEGIN`, `END`, etc);
+* the argument following the keyword;
 * the original line in the survex file.
 
 The default is to report details only for the following subset of
-possible survex commands: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
+possible survex keywords: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
 `*equate`, `*cs`, and `*cs out`.  If instantiated with the option
-`use_extra=True` then the command set is extended to include
+`use_extra=True` then the keyword set is extended to include
 `*export`, `*date`, and `*flags` (this may be changed at a later date).
 
 Finer control can be achieved by modifying the `star_commands`
