@@ -123,9 +123,8 @@ options:
   -o OUTPUT, --output OUTPUT
                         optionally, output to spreadsheet (.ods, .xlsx)
 ```
-Actually, it is not necessary to include the file extension when
-specifying the top level survex file; this is added automatically if
-missing as in the above example.
+The file extension (`.svx`) is supplied automatically if missing, as
+in the above example.
 
 ### Technical notes
 
