@@ -83,7 +83,7 @@ import survex_analyzer as sa
 analyzer = sa.Analyzer(use_extra=False, comment_char=';', keyword_char='*')
 ```
 Here, `use_extra` as already indicated adds some extra keywords, and
-`comment_char` and `keyword_char` allows these characters to be
+`comment_char` and `keyword_char` allow these characters to be
 changed from the defaults.
 
 To analyse a file use
