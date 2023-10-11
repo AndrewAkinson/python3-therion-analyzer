@@ -134,12 +134,12 @@ input it can take.
 One of these concerns the character encoding for the data files.  In
 some cases these can contain characters which are not recognised as
 UTF-8 or ASCII, but are in the extended ASCII character set, such as
-the degree &deg; symbol.  To handle this the module attempts to
-determine the character encoding for each file it is asked to read
-from, before parsing the file.  This is done crudely by slurping the
-entire contents of the file and looking for decoding exceptions.
-Currently the only encodings tested for are 'UTF-8', 'ISO-8859-1' (aka
-Latin 1), and 'ASCII'.
+the degree &deg; symbol in ISO-8859-1.  To handle this the module
+attempts to determine the character encoding for each file it is asked
+to read from, before parsing the file.  This is done rather crudely by
+slurping the entire contents of the file and looking for decoding
+exceptions.  Currently the only encodings tested for are 'UTF-8',
+'ISO-8859-1' (aka Latin 1), and 'ASCII'.
 
 Another issue concerns the use of capitalisation for star commands
 (ignored by survex) versus file names (required on unix systems at
