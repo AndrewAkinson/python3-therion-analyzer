@@ -29,18 +29,19 @@ import survex_analyzer as sa
 
 parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
 parser.add_argument('svx_file', help='starting survex file (.svx)')
-parser.add_argument('-t', '--trace', action='store_true', help='report which files are visited')
-parser.add_argument('-a', '--absolute-paths', action='store_true', help='report absolute paths')
+parser.add_argument('-t', '--trace', action='store_true', help='be verbose about which files are visited')
+parser.add_argument('-a', '--absolute-paths', action='store_true', help='report absolute paths in spreadsheet')
+parser.add_argument('-e', '--extra', action='store_true', help='look for extra star commands')
 parser.add_argument('-s', '--silent', action='store_true', help='run silently')
 parser.add_argument('-o', '--output', help='optionally, output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
-analyzer = sa.Analyzer() # create a new instance
+analyzer = sa.Analyzer(use_extra=args.extra) # create a new instance
 df = analyzer.analyze(args.svx_file, trace=args.trace, absolute_paths=args.absolute_paths)
 
 if args.output:
     df.to_excel(args.output, index=False)
     if not args.silent:
-        print(f'Written summary to {args.output}')
+        print(f'Written data ({len(df)} rows) to {args.output}')
 else:
     print(df)

@@ -56,21 +56,22 @@ class Analyzer:
     # star commands.  The schema should be left alone unless matching
     # changes are made to the 'row =' line below.
     
-    def __init__(self,
-                 star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs out', '*cs', '*export', '*date', '*flags'],
+    def __init__(self, use_extra=False,
+                 star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs out', '*cs'],
+                 extra_star_commands=['*export', '*date', '*flags'],
                  schema={'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str},
                  comment_char=';'):
-        self.star_commands = star_commands
+        self.star_commands = (star_commands + extra_star_commands) if use_extra else star_commands
         self.comment_char = comment_char
         self.schema = schema
 
     # Use a stack to keep track of the include files - items on the
     # stack are tuples of file paths and open file pointers.  The
-    # initial entry (None, None) is used as a sentinel to stop the
-    # iteration.
+    # initial entry (None, None, ...) is used as a sentinel to stop
+    # the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
-        stack = [(None, None, 0)] # initialised with the sentinel
+        stack = [(None, None, 0, '')] # initialised with the sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements
         p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present and work with absolute paths
@@ -92,13 +93,11 @@ class Analyzer:
                 if star_command: # rejected if none found
                     argument = clean.removeprefix(star_command).strip() # again strip whitespace
                     row = (p, encoding.upper(), line_number, '.'.join(svx_path),
-                           star_command.removeprefix('*').upper(), argument, line.expandtabs())
+                           star_command.removeprefix('*').upper(), argument.expandtabs(), line.expandtabs())
                     if line.lower().startswith('*begin'): # process a begin statement (force lower case)
-                        print('>> BEGIN encountered', p, line_number, '.'.join(svx_path), line)
                         svx_path.append(argument.lower()) # force lower case here
                         begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
                     if line.lower().startswith('*end'): # process an end statement
-                        print('>> END encountered', p, line_number, '.'.join(svx_path), line)
                         previous_argument = svx_path.pop()
                         if previous_argument != argument.lower():
                             print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
@@ -106,7 +105,7 @@ class Analyzer:
                             raise Exception('mismatched begin...end statements')
                     rows.append(row) # add to the growing accumulated data
                     if line.lower().startswith('*include'): # process an include statement
-                        stack.append((p, fp, line_number)) # push the current file path, pointer, and line number onto stack
+                        stack.append((p, fp, line_number,encoding)) # push the current path, pointer, line number and encoding onto stack
                         filename = argument.strip('"').replace('\\', '/') # remove quotes and replace backslashes
                         wd = p.parent # the new working directory
                         p = Path(wd, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
@@ -118,7 +117,7 @@ class Analyzer:
                 line = fp.readline() # read the next line if there is one
                 line_number = line_number + 1 # and increment the line counter
             fp.close() # we ran out of lines for the file being currently processed
-            p, fp, line_number = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
+            p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
         return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)
 
