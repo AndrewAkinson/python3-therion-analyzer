@@ -56,14 +56,12 @@ class Analyzer:
     # star commands.  The schema should be left alone unless matching
     # changes are made to the 'row =' line below.
     
-    def __init__(self, use_extra=False,
+    def __init__(self, use_extra=False, comment_char=';',
                  star_commands=['*include', '*begin', '*end', '*fix', '*equate', '*cs out', '*cs'],
-                 extra_star_commands=['*export', '*date', '*flags'],
-                 schema={'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str},
-                 comment_char=';'):
+                 extra_star_commands=['*export', '*date', '*flags']):
         self.star_commands = (star_commands + extra_star_commands) if use_extra else star_commands
         self.comment_char = comment_char
-        self.schema = schema
+        self.schema = {'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str}
 
     # Use a stack to keep track of the include files - items on the
     # stack are tuples of file paths and open file pointers.  The
@@ -71,6 +69,8 @@ class Analyzer:
     # the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
+        if '*include' not in self.star_commands: # this should always be present
+            self.star_commands.insert(0, '*include') # as the first element
         stack = [(None, None, 0, '')] # initialised with the sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements

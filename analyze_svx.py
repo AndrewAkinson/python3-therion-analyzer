@@ -28,10 +28,10 @@ import pandas as pd
 import survex_analyzer as sa
 
 parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
-parser.add_argument('svx_file', help='starting survex file (.svx)')
+parser.add_argument('svx_file', help='top level survex file (.svx)')
 parser.add_argument('-t', '--trace', action='store_true', help='be verbose about which files are visited')
 parser.add_argument('-a', '--absolute-paths', action='store_true', help='report absolute paths in spreadsheet')
-parser.add_argument('-e', '--extra', action='store_true', help='look for extra star commands')
+parser.add_argument('-e', '--extra', action='store_true', help='include extra star commands')
 parser.add_argument('-s', '--silent', action='store_true', help='run silently')
 parser.add_argument('-o', '--output', help='optionally, output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
