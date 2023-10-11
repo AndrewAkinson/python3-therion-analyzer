@@ -162,6 +162,9 @@ has not been implemented here.
 * Allow the keyword character to be specifiable, rather than assuming `*`.
 * Intercept `*set` commands, such keywords are not introduced by `*`.
 
+If there are issues parsing survex files with these scripts, please
+let me know!  Also feel free to request additional features.
+
 ### Copying
 
 This program is free software: you can redistribute it and/or modify
