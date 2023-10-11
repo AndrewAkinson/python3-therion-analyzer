@@ -163,8 +163,7 @@ has not been implemented here.
 * Intercept `*set` commands, such keywords are not introduced by `*`.
 
 If there are issues parsing survex files with these scripts, please
-let me know!
-Also, feel free to request additional features.
+let me know!  Also, feel free to request additional features.
 
 ### Copying
 
