@@ -52,12 +52,12 @@ The dataframe has one row for each command and contains columns for:
 
 The default is to report details only for the following subset of
 possible survex commands: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
-`*equate`, `*cs out`, and `*cs`.  If instantiated with the option
+`*equate`, `*cs`, and `*cs out`.  If instantiated with the option
 `use_extra=True` then the command set is extended to include
-`*export`, `*date`, and `*flags`.
+`*export`, `*date`, and `*flags` (this may be changed at a later date).
 
 Finer control can be achieved by modifying the `star_commands`
-property of the instantiated object, before running the analysis.  For
+property of the instantiated object before running the analysis.  For
 example to look for just `*begin` and `*end` statements use
 ```python
 import survex_analyzer as sa
@@ -90,7 +90,7 @@ df = analyze(top_level_svx_file, trace=False, absolute_paths=False)
 ```
 Here, setting `trace=True` makes the function call be verbose about
 which files it is visitng, and `absolute_paths=True` reports absolute
-rather paths as file names, otherwise they are relative to the
+paths as file names, otherwise they file names are relative to the
 directory containing the top level survex file.
 
 #### With the command line tool
@@ -102,7 +102,7 @@ run
 ./analyze_svx.py example/DowProv -o dp.ods
 ```
 This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
-(`.ods`); it can then be loaded into excel or libreoffice.
+(`.ods`); it can then be loaded into Excel or libreoffice.
 
 The full usage is
 
