@@ -30,6 +30,7 @@ from pathlib import Path
 
 def character_encoding(p):
     '''Try to figure out the character encoding that works for a file'''
+    success = False
     for encoding in ['utf-8', 'iso-8859-1', 'ascii']: # list of options to try
         with p.open('r', encoding=encoding) as fp:
             try:
@@ -37,15 +38,18 @@ def character_encoding(p):
             except UnicodeDecodeError:
                 pass
             else: # if we didn't fail, we found something that works
+                success = True
                 break
+    if not success:
+        raise UnicodeDecodeError(f'Couldnt determine the character encoding for {p}')
     return encoding
 
-def extract_star_command(clean, star_commands):
+def extract_keyword(clean, keywords):
     '''Extract a star command from a cleaned up line, returning None if not present'''
-    commands = [star_command for star_command in star_commands if clean.lower().startswith(star_command)]
-    if '*cs out' in commands: # special treatment because of the space
+    keyword_list = [keyword for keyword in keywords if clean.lower().startswith(keyword)]
+    if '*cs out' in keyword_list: # special treatment because of the space
         return ' '.join(clean.split()[:2]) # join the first two entries with a space (preserve case)
-    elif commands:
+    elif keyword_list:
         return clean.split()[0] # this preserves case
     else:
         return None
@@ -53,13 +57,13 @@ def extract_star_command(clean, star_commands):
 class Analyzer:
 
     # The idea is that we may wish to trim or augment the possible
-    # star commands.  The schema should be left alone unless matching
-    # changes are made to the 'row =' line below.
+    # keywords being tracked.  The schema should be left alone unless
+    # matching changes are made to the 'row =' line below.
     
     def __init__(self, use_extra=False, comment_char=';',
-                 star_commands=['*include', '*begin', '*end', '*fix', '*entrance', '*equate', '*cs out', '*cs'],
-                 extra_star_commands=['*export', '*date', '*flags']):
-        self.star_commands = (star_commands + extra_star_commands) if use_extra else star_commands
+                 keywords=['*include', '*begin', '*end', '*fix', '*entrance', '*equate', '*cs out', '*cs'],
+                 extra_keywords=['*export', '*date', '*flags']):
+        self.keywords = (keywords + extra_keywords) if use_extra else keywords
         self.comment_char = comment_char
         self.schema = {'file':str, 'encoding':str, 'line':int, 'survex_path':str, 'COMMAND':str, 'argument':str, 'full':str}
 
@@ -69,8 +73,8 @@ class Analyzer:
     # the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
-        if '*include' not in self.star_commands: # this should always be present
-            self.star_commands.insert(0, '*include') # as the first element
+        if '*include' not in self.keywords: # this should always be present
+            self.keywords.insert(0, '*include') # as the first element
         stack = [(None, None, 0, '')] # initialised with the sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements
@@ -89,11 +93,11 @@ class Analyzer:
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
-                star_command = extract_star_command(clean, self.star_commands)
-                if star_command: # rejected if none found
-                    argument = clean.removeprefix(star_command).strip() # again strip whitespace
+                keyword = extract_keyword(clean, self.keywords)
+                if keyword: # rejected if none found
+                    argument = clean.removeprefix(keyword).strip() # again strip whitespace
                     row = (p, encoding.upper(), line_number, '.'.join(svx_path),
-                           star_command.removeprefix('*').upper(), argument.expandtabs(), line.expandtabs())
+                           keyword.removeprefix('*').upper(), argument.expandtabs(), line.expandtabs())
                     if line.lower().startswith('*begin'): # process a begin statement (force lower case)
                         svx_path.append(argument.lower()) # force lower case here
                         begin_line_number, begin_line = line_number, line # keep a copy for debugging errors

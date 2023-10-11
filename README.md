@@ -136,13 +136,30 @@ some cases these can contain characters which are not recognised as
 UTF-8 or ASCII, but are in the extended ASCII character set, such as
 the degree &deg; symbol.  To handle this the module attempts to
 determine the character encoding for each file it is asked to read
-from, before parsing the file.
+from, before parsing the file.  This is done crudely by slurping the
+entire contents of the file and looking for decoding exceptions.
+Currently the only encodings tested for are 'UTF-8', 'ISO-8859-1' (aka
+Latin 1), and 'ASCII'.
 
 Another issue concerns the use of capitalisation for star commands
 (ignored by survex) versus file names (required on unix systems at
-least) and survex path itself (forced to lower case by survex).  Thus
-`*Begin` is equally valid as `*begin`.  The parsing algorithm is
-designed to work around these issues.
+least) and survex path itself (by default, forced to lower case by
+survex).  Thus `*Begin` is equally valid as `*begin`.  The parsing
+algorithm is designed to work around these issues BUT it is assumed
+that survey names are forced to lower case.
+
+Generally if a survex file can be successfully processed by `cavern`,
+then it ought to be parsable by the present scripts.  This has been
+checked against the Leck-Masongill data set, and the EaseGill-Pippikin
+data set, as well as the Dow-Prov example.  A final issue is that
+there should be NO spaces between the `*` and the survex command.
+Although this is something that seems to be tolerated by survex, it
+has not been implemented here.
+
+### Open issues
+
+* Intercept `*case preserve|toupper|tolower` and interpret accordingly;
+* Intercept `*set` commands, in particular if keywords are not introduced by `*`.
 
 ### Copying
 
