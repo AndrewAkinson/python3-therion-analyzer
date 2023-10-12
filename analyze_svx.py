@@ -39,11 +39,6 @@ parser.add_argument('-n', '--no-color', action='store_true', help='omit coloriza
 parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
-if args.output:
-    actual = False
-else:
-    actual = True
-
 actual = (not args.output) # used for colorizing output below
     
 # For the time being assume the comment character (;) and keyword
