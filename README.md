@@ -96,12 +96,14 @@ changed from the defaults.
 
 To analyse a file use
 ```python
-df = analyzer.analyze(top_level_svx_file, trace=False, directory_paths=False)
+df = analyze(self, svx_file, trace=False, directory_paths=False, actual=False)
 ```
 Here, setting `trace=True` makes the function call be verbose about
-which files it is visiting, and `directory_paths=True` reports
-absolute directory paths rather than file names relative to the
-directory containing the top level survex file.
+which files it is visiting; `directory_paths=True` reports absolute
+directory paths rather than file names relative to the directory
+containing the top level survex file; and `actual=True` reports the
+actual keywords rather than the capitalised ones.  The function
+returns a pandas dataframe as indicated above
 
 After running an analysis, `analyzer.top_level` contains the file name
 of the top level survex file.
@@ -178,11 +180,11 @@ exceptions.  Currently the only encodings tested for are 'UTF-8' and
 Another issue concerns the use of capitalisation for keywords, file
 names, and the survex path itself.  The parsing algorithm is designed
 to work around these issues BUT it is assumed that survey path names
-introduced by begin statements are forced to lower case.  For
-keywords, for example, `*Begin` is equally valid as `*begin` for
-example. Also, there can be space between the keyword character and
-the keyword itself so that `* begin` is the same as `*begin`.  Again
-the parser should handle these cases transparently.
+introduced by begin statements cab be forced to lower case.  For
+keywords, for example, `*Begin` is equally valid as `*begin`. Also,
+there can be space between the keyword character and the keyword
+itself so that `* begin` is the same as `*begin`.  Again the parser
+should handle these cases transparently.
 
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
