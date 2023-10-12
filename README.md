@@ -52,24 +52,24 @@ The dataframe has one row for each keyword that is tracked and contains columns 
 * the original line in the survex file.
 
 The default is to report details only for the following set of
-possible survex keywords: `include`, `begin`, `end`, `fix`,
-`entrance`, `equate`, and `cs` (which includes `cs out`).  If
+possible survex keywords: `INCLUDE`, `BEGIN`, `END`, `FIX`,
+`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`).  If
 instantiated with the option `use_extra=True` then the set is extended
-to include `export`, `date`, and `flags` (this may be changed at a
+to include `EXPORT`, `DATE`, and `FLAGS` (this may be changed at a
 later date).
 
 Finer control can be achieved by modifying the `keywords`
 property of the instantiated object before running the analysis.  For
-example to look for just `begin` and `end` statements use
+example to look for just `BEGIN` and `END` statements use
 ```python
 import survex_analyzer as sa
 ...
 analyzer = sa.Analyzer() # create an instance
-analyzer.keywords = set(['begin', 'end']) # note, this is a SET
+analyzer.keywords = set(['BEGIN', 'END']) # note, this is a SET
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
-The keyword `include` gets added to the set of keywords if it is not
+The keyword `INCLUDE` gets added to the set of keywords if it is not
 present already.  The same result though can be obtained by sticking
 with the default set of keywords and filtering the resulting
 dataframe, for example

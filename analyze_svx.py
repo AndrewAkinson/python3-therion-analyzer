@@ -30,19 +30,37 @@ import survex_analyzer as sa
 parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
 parser.add_argument('svx_file', help='top level survex file (.svx)')
 parser.add_argument('-t', '--trace', action='store_true', help='be verbose about which files are visited')
-parser.add_argument('-a', '--absolute-paths', action='store_true', help='request absolute paths in dataframe')
-parser.add_argument('-e', '--extra', action='store_true', help='include extra keywords')
+parser.add_argument('-d', '--directory-paths', action='store_true', help='request absolute directory paths in dataframe')
+parser.add_argument('-k', '--keywords', default=None, help='a list of keywords (comma-separated, case insensitive) to use instead of default')
+parser.add_argument('-a', '--additional-keywords', default=None, help='a list of keywords (--ditto--) to add to the default')
+parser.add_argument('-e', '--excluded-keywords', default=None, help='a list of keywords (--ditto--) to exclude from the default')
 parser.add_argument('-q', '--quiet', action='store_true', help='only report warnings and errors')
 parser.add_argument('-o', '--output', help='optionally, output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
-analyzer = sa.Analyzer(use_extra=args.extra) # create a new instance
-df = analyzer.analyze(args.svx_file, trace=args.trace, absolute_paths=args.absolute_paths)
+# For the time being assume the comment character (;) and keyword
+# character (*) are the defaults.  This can be fixed if it ever
+# becomes an issue.
+
+analyzer = sa.Analyzer() # create a new instance
+
+if args.keywords:
+    analyzer.keywords = set(args.keywords.upper().split(','))
+
+if args.additional_keywords:
+    to_be_added = set(args.additional_keywords.upper().split(','))
+    analyzer.keywords = analyzer.keywords.union(to_be_added)
+
+if args.excluded_keywords:
+    to_be_removed = set(args.excluded_keywords.upper().split(','))
+    analyzer.keywords = analyzer.keywords.difference(to_be_removed)
+
+df = analyzer.analyze(args.svx_file, trace=args.trace, absolute_paths=args.directory_paths)
 
 if args.output:
     df.to_excel(args.output, index=False)
     if not args.quiet:
-        keywords = ','.join(analyzer.keywords).upper()
+        keywords = ','.join(sorted(analyzer.keywords))
         print(f'Keywords {keywords} in {analyzer.top_level} extracted to {args.output} ({len(df)} rows)')
 else:
     print(df)

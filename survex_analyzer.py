@@ -31,7 +31,7 @@ from pathlib import Path
 def svx_encoding(p):
     '''Try to figure out the character encoding that works for a file'''
     success = False
-    for encoding in ['utf-8', 'iso-8859-1', 'ascii']: # list of options to try
+    for encoding in ['utf-8', 'iso-8859-1']: # list of options to try
         with p.open('r', encoding=encoding) as fp:
             try:
                 fp.readlines() # we don't need to capture the output here
@@ -62,7 +62,7 @@ def extract_keyword_arguments(clean, keywords, keyword_char):
     if clean and clean[0] == keyword_char: # detect keyword by presence of keyword character
         clean_list = clean[1:].split() # drop the keyword char and split on white space
         for keyword in keywords: # identify the keyword from the list of possible ones
-            if clean_list[0].lower() == keyword:
+            if clean_list[0].upper() == keyword:
                 keyword = clean_list[0] # the first entry, preserving case
                 arguments = clean_list[1:] # the rest is the argument
                 break # break out of for loop at this point
@@ -79,12 +79,11 @@ class Analyzer:
     # titles and data types in the dataframe.  If it is changed,
     # matching changes should be made to the 'row =' line below.
     
-    def __init__(self, use_extra=False, comment_char=';', keyword_char='*'):
-        keywords = set(['begin', 'end', 'fix', 'entrance', 'equate', 'cs'])
-        extra_keywords = set(['export', 'date', 'flags']) # could be changed
-        self.keywords = keywords.union(extra_keywords) if use_extra else keywords
+    def __init__(self, comment_char=';', keyword_char='*'):
         self.comment_char = comment_char
         self.keyword_char = keyword_char
+        self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
+        self.includes = True # whether INCLUDE is explicitly requested
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
                        'argument(s)':str, 'path':str, 'full':str}
 
@@ -93,8 +92,10 @@ class Analyzer:
     # None, ...) acts as a sentinel to stop the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
-        self.keywords.add('include') # this should always be present
-        stack = [(None, None, 0, '')] # initialised with a sentinel
+        if 'INCLUDE' not in self.keywords: # deal with this case ..
+            self.keywords.add('INCLUDE') # by adding the keyword ..
+            self.includes = False # but recording that it wasn't explicitly requested
+        stack = [(None, None, 0, '')] # initialise with a sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements
         p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present 
@@ -109,17 +110,19 @@ class Analyzer:
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
                 keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
-                    row = (p, encoding.upper(), line_number, keyword.upper(),
-                           ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
-                    rows.append(row) # add to the growing accumulated data
-                    if keyword.upper() == 'BEGIN': # process a BEGIN statement
+                    uc_keyword = keyword.upper() # upper case
+                    if uc_keyword != 'INCLUDE' or self.includes: 
+                        row = (p, encoding.upper(), line_number, uc_keyword,
+                               ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
+                        rows.append(row) # add to the growing accumulated data
+                    if uc_keyword == 'BEGIN': # process a BEGIN statement
                         if arguments:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
                             svx_path.append(begin_path)
                         else: # empty BEGIN statement
                             print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
                         begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
-                    if keyword.upper() == 'END': # process an END statement
+                    if uc_keyword == 'END': # process an END statement
                         if arguments:
                             end_path = arguments[0].lower() # again lower case
                             begin_path = svx_path.pop()
@@ -129,7 +132,7 @@ class Analyzer:
                                 print(f'END statement line {line_number} in {p}: {line}')
                         else: # empty END statement
                             print(f'WARNING: empty END statement at line {line_number} in {p}')
-                    if keyword.upper() == 'INCLUDE': # process an INCLUDE statement
+                    if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                         stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
                         filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
                         wd = p.parent # the current working directory
