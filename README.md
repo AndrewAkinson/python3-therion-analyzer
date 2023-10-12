@@ -44,7 +44,7 @@ or exported to a spreadsheet for inspection.
 The dataframe has one row for each keyword that is tracked and contains columns for:
 
 * the file name;
-* the detected character encoding of the file (UTF-8, ISO-8859-1, ASCII);
+* the detected character encoding of the file (`UTF-8`, `ISO-8859-1`, `ASCII`);
 * the line number in the file;
 * the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
 * the argument(s) following the keyword;
