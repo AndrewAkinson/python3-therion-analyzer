@@ -84,7 +84,7 @@ class Analyzer:
         self.keyword_char = keyword_char
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
-                       'argument(s)':str, 'path':str, 'full':str}
+                       'argument':str, 'path':str, 'full':str}
 
     # Use a stack to keep track of the include files - items on the
     # stack are tuples of file information.  The initial entry (None,
@@ -136,10 +136,9 @@ class Analyzer:
                     if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                         stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
                         filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
-                        wd = p.parent # the current working directory
-                        p = Path(wd, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
+                        p = Path(p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
                         fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
-                line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
+                line, line_number = svx_readline(fp, line_number) # read next line and increment the line number counter
             fp.close() # we ran out of lines for the file being currently processed
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
