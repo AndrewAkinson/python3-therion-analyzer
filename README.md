@@ -20,9 +20,7 @@ An sample survex data source file tree for the Dow-Prov system is
 given in the `sample` directory.  For example, to show the fixed
 points and co-ordinate system definitions use
 ```bash
-./analyze_svx.py sample/DowProv -k cs,fix
-```
-```
+$ ./analyze_svx.py sample/DowProv -k cs,fix
 sample/DowProv.svx:41:*cs OSGB:SD
 sample/DowProv.svx:42:*cs out EPSG:7405
 sample/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
