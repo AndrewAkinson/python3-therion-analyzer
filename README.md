@@ -175,15 +175,14 @@ slurping the entire contents of the file and looking for decoding
 exceptions.  Currently the only encodings tested for are 'UTF-8' and
 'ISO-8859-1' (aka Latin 1).
 
-Another issue concerns the use of capitalisation for keywords
-(ignored), file names (required on unix systems at least) and survex
-path itself (by default, here forced to lower case).  The parsing
-algorithm is designed to work around these issues BUT it is assumed
-that survey path names introduced by begin statements are forced
-to lower case.  For keywords, for example, `*Begin` is equally valid
-as `*begin` for example. Also, there can be space between the keyword
-character and the keyword itself so that `* begin` is the same as
-`*begin`.  Again the parser should handle these cases transparently.
+Another issue concerns the use of capitalisation for keywords, file
+names, and the survex path itself.  The parsing algorithm is designed
+to work around these issues BUT it is assumed that survey path names
+introduced by begin statements are forced to lower case.  For
+keywords, for example, `*Begin` is equally valid as `*begin` for
+example. Also, there can be space between the keyword character and
+the keyword itself so that `* begin` is the same as `*begin`.  Again
+the parser should handle these cases transparently.
 
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
