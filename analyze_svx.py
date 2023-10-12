@@ -61,10 +61,12 @@ if args.excluded_keywords:
 df = analyzer.analyze(args.svx_file, trace=args.trace, directory_paths=args.directory_paths, actual=actual)
 
 if args.output:
+    
     df.to_excel(args.output, index=False)
     if not args.quiet:
         keywords = ','.join(sorted(analyzer.keywords))
         print(f'Keywords {keywords} in {analyzer.top_level} extracted to {args.output} ({len(df)} rows)')
+
 else:
 
     # The following draws on
