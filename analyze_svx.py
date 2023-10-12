@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """analyze_svx.py
-Wrapper code for python module for analyzing survex source data file tree.
+Wrapper for extracting survex keywords from a source data file tree.
 
 Copyright (C) 2023 Patrick B Warren
 
