@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """svx_analyzer.py
-Python module for analyzing survex source data file tree.
+Python module for extracting survex keywords from a source data file tree.
 
 For usage see README.md.
 
