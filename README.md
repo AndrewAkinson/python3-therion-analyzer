@@ -18,7 +18,7 @@ actual lines, directly to terminal output, colorized by default.
 
 An sample survex data source file tree for the Dow-Prov system is
 given in the `sample` directory.  For example, to show the fixed
-points and co-ordinate system definitions use
+points and co-ordinate system definitions one would have
 ```bash
 $ ./analyze_svx.py sample/DowProv -k cs,fix
 sample/DowProv.svx:41:*cs OSGB:SD
@@ -27,8 +27,8 @@ sample/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
 sample/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
 sample/HagDyke.svx:14:*fix W 98981 73327 459
 ```
-(the output would additionally be colorized on a terminal, unless the
-`-n` option is specified).
+(the output would also be colorized on a terminal, unless the
+`-n` option is additionally specified).
 
 ### Installation
 
