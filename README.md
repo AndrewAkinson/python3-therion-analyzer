@@ -16,8 +16,16 @@ dataframe which can be exported to a spreadsheet (see wrapper code).
 Alternatively, the wrapper writes file names, line numbers, and
 actual lines, directly to standard output, colorized by default.
 
-An example survex data source file tree for the Dow-Prov system is
-given in the `example` directory.
+An sample survex data source file tree for the Dow-Prov system is
+given in the `sample` directory.
+
+./analyze_svx.py example/DowProv -k cs,fix
+example/DowProv.svx:41:*cs OSGB:SD
+example/DowProv.svx:42:*cs out EPSG:7405
+example/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
+example/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
+example/HagDyke.svx:14:*fix W 98981 73327 459
+
 
 ### Installation
 
