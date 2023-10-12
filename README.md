@@ -123,12 +123,19 @@ options:
   -a, --additional-keywords  a set of keywords to add to the default
   -e, --excluded-keywords    a set of keywords to exclude from the default
   -q, --quiet                only report warnings and errors
+  -n, --no-color             omit colorization when output directly
   -o, --output               (optional) output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
 in the above example.  The sets of keywords should be comma-separated,
 with no additional spaces, and are case-insensitive, so `-k begin,end`
 is the same as `-k BEGIN,END`, and so on.
+
+If `-o` is not specified the command writes a list of file names and
+line numbers with the associated lines to standard output.  Unless the
+`-n` (`--no-color`) option is selected, the output is colorized like
+`grep -n`, with the keyword character and the relevant keyword
+additionally highlighted.
 
 To repeat the above Dow-Prov example selecting only BEGIN and END keywords at
 the command line, one can use

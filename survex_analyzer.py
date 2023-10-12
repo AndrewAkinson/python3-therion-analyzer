@@ -84,6 +84,8 @@ class Analyzer:
         self.keyword_char = keyword_char
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
         self.includes = True # whether INCLUDE is explicitly requested
+        self.begins = True # ditto for these
+        self.ends = True
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
                        'argument(s)':str, 'path':str, 'full':str}
 
@@ -91,10 +93,12 @@ class Analyzer:
     # stack are tuples of file information.  The initial entry (None,
     # None, ...) acts as a sentinel to stop the iteration.
 
-    def analyze(self, svx_file, trace=False, directory_paths=False):
-        if 'INCLUDE' not in self.keywords: # deal with this case ..
-            self.keywords.add('INCLUDE') # by adding the keyword ..
-            self.includes = False # but recording that it wasn't explicitly requested
+    def analyze(self, svx_file, trace=False, directory_paths=False, actual=False):
+        keywords = self.keywords.copy() # make a set copy, to modify as next
+        keywords.add('INCLUDE') # should always be there
+        if 'BEGIN' in keywords or 'END' in keywords: # if there is one there should be the other
+            keywords.add('BEGIN')
+            keywords.add('END')
         stack = [(None, None, 0, '')] # initialise with a sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements
@@ -108,11 +112,11 @@ class Analyzer:
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
-                keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
+                keyword, arguments = extract_keyword_arguments(clean, keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
                     uc_keyword = keyword.upper() # upper case
-                    if uc_keyword != 'INCLUDE' or self.includes: 
-                        row = (p, encoding.upper(), line_number, uc_keyword,
+                    if uc_keyword in self.keywords: # test against the original set of keywords
+                        row = (p, encoding.upper(), line_number, keyword if actual else uc_keyword,
                                ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
                         rows.append(row) # add to the growing accumulated data
                     if uc_keyword == 'BEGIN': # process a BEGIN statement
@@ -141,8 +145,5 @@ class Analyzer:
                 line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
             fp.close() # we ran out of lines for the file being currently processed
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
-
-        if not self.includes: # patch up the set of keywords
-            self.keywords.remove('INCLUDE')
 
         return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)
