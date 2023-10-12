@@ -112,7 +112,7 @@ class Analyzer:
                     row = (p, encoding.upper(), line_number, keyword.upper(),
                            ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
                     rows.append(row) # add to the growing accumulated data
-                    if keyword.upper() == 'BEGIN': # process a BEGIN statement (force lower case)
+                    if keyword.upper() == 'BEGIN': # process a BEGIN statement
                         if arguments:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
                             svx_path.append(begin_path)
