@@ -177,7 +177,7 @@ exceptions.  Currently the only encodings tested for are 'UTF-8' and
 
 Another issue concerns the use of capitalisation for keywords
 (ignored), file names (required on unix systems at least) and survex
-path itself (by default, forced to lower case by survex).  The parsing
+path itself (by default, here forced to lower case).  The parsing
 algorithm is designed to work around these issues BUT it is assumed
 that survey path names introduced by begin statements are forced
 to lower case.  For keywords, for example, `*Begin` is equally valid
