@@ -30,9 +30,9 @@ import survex_analyzer as sa
 parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
 parser.add_argument('svx_file', help='top level survex file (.svx)')
 parser.add_argument('-t', '--trace', action='store_true', help='be verbose about which files are visited')
-parser.add_argument('-a', '--absolute-paths', action='store_true', help='report absolute paths in spreadsheet')
+parser.add_argument('-a', '--absolute-paths', action='store_true', help='request absolute paths in dataframe')
 parser.add_argument('-e', '--extra', action='store_true', help='include extra keywords')
-parser.add_argument('-s', '--silent', action='store_true', help='run silently')
+parser.add_argument('-q', '--quiet', action='store_true', help='only report warnings and errors')
 parser.add_argument('-o', '--output', help='optionally, output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
@@ -41,7 +41,8 @@ df = analyzer.analyze(args.svx_file, trace=args.trace, absolute_paths=args.absol
 
 if args.output:
     df.to_excel(args.output, index=False)
-    if not args.silent:
-        print(f'Written data ({len(df)} rows) to {args.output}')
+    if not args.quiet:
+        keywords = ','.join(analyzer.keywords).upper()
+        print(f'Keywords {keywords} in {analyzer.top_level} extracted to {args.output} ({len(df)} rows)')
 else:
     print(df)

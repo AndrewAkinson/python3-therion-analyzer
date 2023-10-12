@@ -28,7 +28,7 @@ along with this program.  If not, see
 import pandas as pd
 from pathlib import Path
 
-def character_encoding(p):
+def svx_encoding(p):
     '''Try to figure out the character encoding that works for a file'''
     success = False
     for encoding in ['utf-8', 'iso-8859-1', 'ascii']: # list of options to try
@@ -44,23 +44,32 @@ def character_encoding(p):
         raise UnicodeDecodeError(f'Couldnt determine the character encoding for {p}')
     return encoding
 
+def svx_open(p, trace):
+    '''open a survex file and reset line counter'''
+    encoding = svx_encoding(p)
+    fp = p.open('r', encoding=encoding)
+    if trace:
+        print(f'Entering {p} ({encoding})')
+    line_number = 0
+    return fp, line_number, encoding
+
+def svx_readline(fp, line_number):
+    '''read a line from the survex file and increment line counter'''
+    return fp.readline(), line_number + 1
+
 def extract_keyword_arguments(clean, keywords, keyword_char):
-    '''Extract a keyword and arguments from a cleaned up line, returning None if not present'''
+    '''Extract a keyword and arguments from a cleaned up line'''
     if clean and clean[0] == keyword_char: # detect keyword by presence of keyword character
         clean_list = clean[1:].split() # drop the keyword char and split on white space
-        if clean_list[0].lower() == 'cs' and clean_list[1].lower() == 'out': # special treatment for 'cs out'
-            keyword = ' '.join(clean_list[:2]) # join the first two entries with a space (preserve case)
-            arguments = clean_list[2:] # the remainder is the argument
-        else:
-            for keyword in keywords: # identify the keyword from the list of possible ones
-                if clean_list[0].lower() == keyword:
-                    keyword = clean_list[0] # the first entry, preserving case
-                    arguments = clean_list[1:] # the rest is the argument
-                    break
-            else: # terminal clause of for loop -- the keyword is not in the provided list
-                keyword, arguments = None, []
-    else: # the cleaned up line did not start with a keyword character
-        keyword, arguments = None, []
+        for keyword in keywords: # identify the keyword from the list of possible ones
+            if clean_list[0].lower() == keyword:
+                keyword = clean_list[0] # the first entry, preserving case
+                arguments = clean_list[1:] # the rest is the argument
+                break # break out of for loop at this point
+        else: # terminal clause in for loop
+            keyword, arguments = None, [] # the default position
+    else: # line did not start with the keyword character
+        keyword, arguments = None, [] # the default position
     return keyword, arguments
 
 class Analyzer:
@@ -70,11 +79,10 @@ class Analyzer:
     # titles and data types in the dataframe.  If it is changed,
     # matching changes should be made to the 'row =' line below.
     
-    def __init__(self, use_extra=False, comment_char=';', keyword_char='*',
-                 keywords=['include', 'begin', 'end',
-                           'fix', 'entrance', 'equate', 'cs out', 'cs'],
-                 extra_keywords=['export', 'date', 'flags']):
-        self.keywords = (keywords + extra_keywords) if use_extra else keywords
+    def __init__(self, use_extra=False, comment_char=';', keyword_char='*'):
+        keywords = set(['begin', 'end', 'fix', 'entrance', 'equate', 'cs'])
+        extra_keywords = set(['export', 'date', 'flags']) # could be changed
+        self.keywords = keywords.union(extra_keywords) if use_extra else keywords
         self.comment_char = comment_char
         self.keyword_char = keyword_char
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
@@ -85,52 +93,49 @@ class Analyzer:
     # None, ...) acts as a sentinel to stop the iteration.
 
     def analyze(self, svx_file, trace=False, absolute_paths=False):
-        if 'include' not in self.keywords: # this should always be present
-            self.keywords.insert(0, 'include') # as the first element
+        self.keywords.add('include') # this should always be present
         stack = [(None, None, 0, '')] # initialised with a sentinel
         rows = [] # accumulate the results row by row
         svx_path = [] # list of elements extracted from begin...end statements
-        p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present and work with absolute paths
-        if absolute_paths:
+        p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present 
+        self.top_level = p # record this
+        if absolute_paths: # use absolute path if requested
             p = p.absolute()
-        wd = p.parent # the working directory
-        encoding = character_encoding(p) # figure out the character encoding for the top level file
-        fp = p.open('r', encoding=encoding)
-        if trace:
-            print(f'Entering {p} ({encoding})')
-        line_number = 0 # keep track of the line numbers
+        fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
         while fp: # will finish when the sentinel is encountered
-            line = fp.readline() # read the next line
-            line_number = line_number + 1 # increment the line number counter
+            line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
                 keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
                     row = (p, encoding.upper(), line_number, keyword.upper(),
-                           ' '.join(arguments), '.'.join(svx_path), line.expandtabs())# for sanity, avoid tabs in the dataframe entries (!!)
-                    if keyword.lower() == 'begin' and arguments: # process a begin statement (force lower case)
-                        svx_path.append(arguments[0].lower()) # force lower case here (may be fixed in subsequent versions)
-                        begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
-                    if keyword.lower() == 'end' and arguments: # process an end statement
-                        previous_argument = svx_path.pop()
-                        if previous_argument != arguments[0].lower():
-                            print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
-                            print(f'END statement line {line_number} in {p}: {line}')
-                            raise Exception('mismatched begin...end statements')
+                           ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
                     rows.append(row) # add to the growing accumulated data
+                    if keyword.lower() == 'begin': # process a BEGIN statement (force lower case)
+                        if arguments:
+                            begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
+                            svx_path.append(begin_path)
+                        else: # empty BEGIN statement
+                            print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
+                        begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
+                    if keyword.lower() == 'end': # process an END statement
+                        if arguments:
+                            end_path = arguments[0].lower() # again lower case
+                            begin_path = svx_path.pop()
+                            if end_path != begin_path:
+                                print('WARNING: mismatched BEGIN and END statements:')
+                                print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
+                                print(f'END statement line {line_number} in {p}: {line}')
+                        else: # empty END statement
+                            print(f'WARNING: empty END statement at line {line_number} in {p}')
                     if keyword.lower() == 'include': # process an include statement
-                        stack.append((p, fp, line_number,encoding)) # push the current path, pointer, line number and encoding onto stack
-                        filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove quotes and replace backslashes
-                        wd = p.parent # the new working directory
+                        stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
+                        filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
+                        wd = p.parent # the current working directory
                         p = Path(wd, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
-                        encoding = character_encoding(p)
-                        fp = p.open('r', encoding=encoding)
-                        if trace:
-                            print(f'Visiting {p} ({encoding})')
-                        line_number = 0 # reset the line number counter
-                line = fp.readline() # read the next line if there is one
-                line_number = line_number + 1 # and increment the line counter
+                        fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
+                line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
             fp.close() # we ran out of lines for the file being currently processed
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 

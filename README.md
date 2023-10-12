@@ -6,12 +6,13 @@ v1.0 - initial working version
 
 ### Summary
 
-This repository contains a python package and wrapper code to extract selected keywords and associated data from
-survex data source file trees (`.svx` files), following the `*include`
-statements.  Extracted keywords include `*begin`...`*end`
-statements, station fixes, entrance tags, and co-ordinate system
-declarations and others as desired.  The extracted keywords and data are returned as a pandas dataframe
-which can be exported to a spreadsheet (see wrapper code).
+This repository contains a python package and wrapper code to extract
+selected keywords and associated data from survex data source file
+trees (`.svx` files), following the `include` statements.  Extracted
+keywords include begin and end statements, station fixes, entrance
+tags, co-ordinate system declarations, and others as desired.  The
+extracted keywords and data are returned as a pandas dataframe which
+can be exported to a spreadsheet (see wrapper code).
 
 An example survex data source file tree for the Dow-Prov system is
 given in the `example` directory.
@@ -37,7 +38,7 @@ analyzer = sa.Analyzer() # create an instance
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
-The returned pandas dataframe can be further analysed programatically,
+The returned pandas dataframe `df` can be further analysed programatically,
 or exported to a spreadsheet for inspection.
 
 The dataframe has one row for each keyword that is tracked and contains columns for:
@@ -45,37 +46,39 @@ The dataframe has one row for each keyword that is tracked and contains columns 
 * the file name;
 * the detected character encoding of the file (UTF-8, ISO-8859-1, ASCII);
 * the line number in the file;
-* the current survex path;
-* the actual keyword (`INCLUDE`, `BEGIN`, `END`, etc);
+* the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
 * the argument(s) following the keyword;
+* the current survex path;
 * the original line in the survex file.
 
-The default is to report details only for the following subset of
-possible survex keywords: `*include`, `*begin`, `*end`, `*fix`, `*entrance`,
-`*equate`, `*cs`, and `*cs out`.  If instantiated with the option
-`use_extra=True` then the keyword set is extended to include
-`*export`, `*date`, and `*flags` (this may be changed at a later date).
+The default is to report details only for the following set of
+possible survex keywords: `include`, `begin`, `end`, `fix`,
+`entrance`, `equate`, and `cs` (which includes `cs out`).  If
+instantiated with the option `use_extra=True` then the set is extended
+to include `export`, `date`, and `flags` (this may be changed at a
+later date).
 
 Finer control can be achieved by modifying the `keywords`
 property of the instantiated object before running the analysis.  For
-example to look for just `*begin` and `*end` statements use
+example to look for just `begin` and `end` statements use
 ```python
 import survex_analyzer as sa
 ...
 analyzer = sa.Analyzer() # create an instance
-analyzer.keywords = ['*begin', '*end']
+analyzer.keywords = set(['begin', 'end']) # note, this is a SET
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
-Note that `*include` gets added to the list of keywords if it is not
-present already.  Usually though it will be better to stick with the
-default list of keywords and filter the resulting dataframe, using
-for example
+The keyword `include` gets added to the set of keywords if it is not
+present already.  The same result though can be obtained by sticking
+with the default set of keywords and filtering the resulting
+dataframe, for example
 ```python
 df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
 ```
 
-The full specification of the relevant functions is as follows.  To instantiate use
+The full specification of the relevant functions is as follows.  To
+instantiate use
 
 ```python
 import survex_analyzer as sa
@@ -95,6 +98,9 @@ which files it is visiting, and `absolute_paths=True` reports absolute
 paths rather than file names relative to the directory containing the
 top level survex file.
 
+After running an analysis, `analyzer.top_level` contains the file name
+of the top level survex file.
+
 #### With the command line tool
 
 The command line tool `analyze_svx.py` provides a convenient interface
@@ -109,7 +115,7 @@ This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
 The full usage is
 
 ```
-usage: analyze_svx.py [-h] [-t] [-a] [-e] [-s] [-o OUTPUT] svx_file
+usage: analyze_svx.py [-h] [-t] [-a] [-e] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
@@ -119,9 +125,9 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -t, --trace           be verbose about which files are visited
-  -a, --absolute-paths  report absolute paths in spreadsheet
+  -a, --absolute-paths  request absolute paths in dataframe
   -e, --extra           include extra keywords
-  -s, --silent          run silently
+  -q, --quiet           only report warnings and errors
   -o OUTPUT, --output OUTPUT
                         optionally, output to spreadsheet (.ods, .xlsx)
 ```
@@ -143,15 +149,15 @@ slurping the entire contents of the file and looking for decoding
 exceptions.  Currently the only encodings tested for are 'UTF-8',
 'ISO-8859-1' (aka Latin 1), and 'ASCII'.
 
-Another issue concerns the use of capitalisation for keywords (ignored
-by survex), file names (required on unix systems at least) and survex
-path itself (by default, forced to lower case by survex).  Thus
-`*Begin` is equally valid as `*begin`.  The parsing algorithm is
-designed to work around these issues BUT it is assumed that survey
-names are forced to lower case.  Also there can be space between the
-keyword character and the keyword itself, so that `* begin` is the
-same as `*begin`, for instance.  Again the parser should handle this
-case transparently.
+Another issue concerns the use of capitalisation for keywords
+(ignored), file names (required on unix systems at least) and survex
+path itself (by default, forced to lower case by survex).  The parsing
+algorithm is designed to work around these issues BUT it is assumed
+that survey names are forced to lower case.  For keywords, for
+example, `*Begin` is equally valid as `*begin` for example. Also there
+can be space between the keyword character and the keyword itself, so
+that `* begin` is the same as `*begin`.  Again the parser should
+handle these cases transparently.
 
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
@@ -160,8 +166,8 @@ EaseGill-Pippikin data set, as well as the Dow-Prov example.
 
 ### Open issues
 
-* Intercept `*case preserve|toupper|tolower` and interpret accordingly.
-* Intercept `*set` commands, to set comment and keyword characters.
+* Intercept `set` commands, to set comment and keyword characters.
+* Intercept `case preserve|toupper|tolower` and interpret accordingly.
 
 If there are issues parsing survex files with these scripts, please
 let me know!  Also, feel free to request additional features.
