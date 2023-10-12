@@ -27,7 +27,7 @@ sample/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
 sample/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
 sample/HagDyke.svx:14:*fix W 98981 73327 459
 ```
-(the output would also be colorized on a terminal, unless the
+(the output would normally be colorized on a terminal, unless the
 `-n` option is additionally specified).
 
 ### Installation
@@ -121,7 +121,7 @@ The full usage is
 
 ```
 usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a KEYWORDS]
-                                  [-e KEYWORDS] [-q] [-o OUTPUT] svx_file
+                                  [-e KEYWORDS] [-q] [-n] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
