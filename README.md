@@ -18,7 +18,7 @@ actual lines, directly to terminal output, colorized by default.
 
 An sample survex data source file tree for the Dow-Prov system is
 given in the `sample` directory.  For example, to show the fixed
-points and co-ordinate system definitions one would have
+points and co-ordinate system definitions for this system one would have
 ```
 $ ./analyze_svx.py sample/DowProv -k cs,fix
 sample/DowProv.svx:41:*cs OSGB:SD
