@@ -83,9 +83,6 @@ class Analyzer:
         self.comment_char = comment_char
         self.keyword_char = keyword_char
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
-        self.includes = True # whether INCLUDE is explicitly requested
-        self.begins = True # ditto for these
-        self.ends = True
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
                        'argument(s)':str, 'path':str, 'full':str}
 
