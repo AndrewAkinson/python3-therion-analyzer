@@ -142,4 +142,7 @@ class Analyzer:
             fp.close() # we ran out of lines for the file being currently processed
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
+        if not self.includes: # patch up the set of keywords
+            self.keywords.remove('INCLUDE')
+
         return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)

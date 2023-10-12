@@ -44,7 +44,7 @@ or exported to a spreadsheet for inspection.
 The dataframe has one row for each keyword that is tracked and contains columns for:
 
 * the file name;
-* the detected character encoding of the file (`UTF-8`, `ISO-8859-1`, `ASCII`);
+* the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);
 * the line number in the file;
 * the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
 * the argument(s) following the keyword;
@@ -107,7 +107,8 @@ This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
 The full usage is
 
 ```
-usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a KEYWORDS] [-e KEYWORDS] [-q] [-o OUTPUT] svx_file
+usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a KEYWORDS]
+                                  [-e KEYWORDS] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
@@ -118,24 +119,26 @@ options:
   -h, --help                 show this help message and exit
   -t, --trace                be verbose about which files are visited
   -d, --directory-paths      request absolute directory paths in dataframe
-  -k, --keywords             a list of keywords (comma-separated, case insensitive) to use instead of default
-  -a, --additional-keywords  a list of keywords (--ditto--) to add to the default
-  -e, --excluded-keywords    a list of keywords (--ditto--) to exclude from the default
+  -k, --keywords             a set of keywords to use instead of default
+  -a, --additional-keywords  a set of keywords to add to the default
+  -e, --excluded-keywords    a set of keywords to exclude from the default
   -q, --quiet                only report warnings and errors
   -o, --output               (optional) output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
-in the above example.
+in the above example.  The sets of keywords should be comma-separated,
+with no additional spaces, and are case-insensitive, so `-k begin,end`
+is the same as `-k BEGIN,END`, and so on.
 
 To repeat the above Dow-Prov example selecting only BEGIN and END keywords at
-the command line, use
+the command line, one can use
 ```bash
 ./analyze_svx.py example/DowProv -k BEGIN,END -o dp.ods
 ```
-Note that the keyword specification is case insensitive here: one can
-equally used `-k begin,end`.  The `-a` and `-e` options work
-similarly, but modify the default keyword set rather than replacing
-it: to omit listing flags for example, use `-e FLAGS`, and so on.
+The `-a` and `-e` options work similarly,
+but modify the default keyword set rather than replacing it.  Thus to
+omit all the `INCLUDE` statements in the Dow-Prov example, use `-e INCLUDE` or `-e
+include`, and so on.
 
 ### Technical notes
 
@@ -144,23 +147,23 @@ input it can take.
 
 One of these concerns the character encoding for the data files.  In
 some cases these can contain characters which are not recognised as
-UTF-8 or ASCII, but are in the extended ASCII character set, such as
+UTF-8 but are in the extended ASCII character set, such as
 the degree &deg; symbol in ISO-8859-1.  To handle this the module
 attempts to determine the character encoding for each file it is asked
 to read from, before parsing the file.  This is done rather crudely by
 slurping the entire contents of the file and looking for decoding
-exceptions.  Currently the only encodings tested for are 'UTF-8',
-'ISO-8859-1' (aka Latin 1), and 'ASCII'.
+exceptions.  Currently the only encodings tested for are 'UTF-8' and
+'ISO-8859-1' (aka Latin 1).
 
 Another issue concerns the use of capitalisation for keywords
 (ignored), file names (required on unix systems at least) and survex
 path itself (by default, forced to lower case by survex).  The parsing
 algorithm is designed to work around these issues BUT it is assumed
-that survey names are forced to lower case.  For keywords, for
-example, `*Begin` is equally valid as `*begin` for example. Also there
-can be space between the keyword character and the keyword itself, so
-that `* begin` is the same as `*begin`.  Again the parser should
-handle these cases transparently.
+that survey path names introduced by begin statements are forced
+to lower case.  For keywords, for example, `*Begin` is equally valid
+as `*begin` for example. Also, there can be space between the keyword
+character and the keyword itself so that `* begin` is the same as
+`*begin`.  Again the parser should handle these cases transparently.
 
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
