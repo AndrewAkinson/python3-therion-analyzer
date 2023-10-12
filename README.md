@@ -14,18 +14,23 @@ fixes, entrance tags, co-ordinate system declarations, and others as
 desired.  The extracted keywords and data are returned as a pandas
 dataframe which can be exported to a spreadsheet (see wrapper code).
 Alternatively, the wrapper writes file names, line numbers, and
-actual lines, directly to standard output, colorized by default.
+actual lines, directly to terminal output, colorized by default.
 
 An sample survex data source file tree for the Dow-Prov system is
-given in the `sample` directory.
-
-./analyze_svx.py example/DowProv -k cs,fix
-example/DowProv.svx:41:*cs OSGB:SD
-example/DowProv.svx:42:*cs out EPSG:7405
-example/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
-example/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
-example/HagDyke.svx:14:*fix W 98981 73327 459
-
+given in the `sample` directory.  For example, to show the fixed
+points and co-ordinate system definitions use
+```bash
+./analyze_svx.py sample/DowProv -k cs,fix
+```
+```
+sample/DowProv.svx:41:*cs OSGB:SD
+sample/DowProv.svx:42:*cs out EPSG:7405
+sample/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
+sample/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
+sample/HagDyke.svx:14:*fix W 98981 73327 459
+```
+(the output would additionally be colorized on a terminal, unless the
+`-n` option is specified).
 
 ### Installation
 
@@ -106,10 +111,10 @@ of the top level survex file.
 #### With the command line tool
 
 The command line tool `analyze_svx.py` provides a convenient interface
-to the underlying module.  For example to analyze the Dow-Prov example
+to the underlying module.  For example to analyze the Dow-Prov sample
 run
 ```bash
-./analyze_svx.py example/DowProv -o dp.ods
+./analyze_svx.py sample/DowProv -o dp.ods
 ```
 This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
 (`.ods`); it can then be loaded into Excel or libreoffice.
@@ -142,19 +147,19 @@ with no additional spaces, and are case-insensitive, so `-k begin,end`
 is the same as `-k BEGIN,END`, and so on.
 
 If `-o` is not specified the command writes a list of file names and
-line numbers with the associated lines to standard output.  Unless the
+line numbers with the associated lines to terminal output.  Unless the
 `-n` (`--no-color`) option is selected, the output is colorized like
 `grep -n`, with the keyword character and the relevant keyword
 additionally highlighted.
 
-To repeat the above Dow-Prov example selecting only BEGIN and END keywords at
+To repeat the above Dow-Prov sample selecting only BEGIN and END keywords at
 the command line, one can use
 ```bash
-./analyze_svx.py example/DowProv -k BEGIN,END -o dp.ods
+./analyze_svx.py sample/DowProv -k BEGIN,END -o dp.ods
 ```
 The `-a` and `-e` options work similarly,
 but modify the default keyword set rather than replacing it.  Thus to
-omit all the `INCLUDE` statements in the Dow-Prov example, use `-e INCLUDE` or `-e
+omit all the `INCLUDE` statements in the Dow-Prov sample, use `-e INCLUDE` or `-e
 include`, and so on.
 
 ### Technical notes
@@ -185,7 +190,7 @@ character and the keyword itself so that `* begin` is the same as
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
 been checked against the Leck-Masongill data set and the
-EaseGill-Pippikin data set, as well as the Dow-Prov example.
+EaseGill-Pippikin data set, as well as the Dow-Prov sample.
 
 ### Open issues
 
