@@ -13,7 +13,7 @@ Extracted keywords can include begin and end statements, station
 fixes, entrance tags, co-ordinate system declarations, and others as
 desired.  The extracted keywords and data are returned as a pandas
 dataframe which can be exported to a spreadsheet (see wrapper code).
-Alternatively, the wrapper can write file names, line numbers, and
+Alternatively, the wrapper writes file names, line numbers, and
 actual lines, directly to standard output, colorized by default.
 
 An example survex data source file tree for the Dow-Prov system is
