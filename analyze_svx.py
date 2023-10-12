@@ -35,7 +35,7 @@ parser.add_argument('-k', '--keywords', default=None, help='a list of keywords (
 parser.add_argument('-a', '--additional-keywords', default=None, help='a list of keywords (--ditto--) to add to the default')
 parser.add_argument('-e', '--excluded-keywords', default=None, help='a list of keywords (--ditto--) to exclude from the default')
 parser.add_argument('-q', '--quiet', action='store_true', help='only report warnings and errors')
-parser.add_argument('-o', '--output', help='optionally, output to spreadsheet (.ods, .xlsx)')
+parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
 # For the time being assume the comment character (;) and keyword
