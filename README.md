@@ -8,11 +8,13 @@ v1.0 - initial working version
 
 This repository contains a python package and wrapper code to extract
 selected keywords and associated data from survex data source file
-trees (`.svx` files), following the file inclusion statements.  Extracted
-keywords can include begin and end statements, station fixes, entrance
-tags, co-ordinate system declarations, and others as desired.  The
-extracted keywords and data are returned as a pandas dataframe which
-can be exported to a spreadsheet (see wrapper code).
+trees (`.svx` files), following the file inclusion statements.
+Extracted keywords can include begin and end statements, station
+fixes, entrance tags, co-ordinate system declarations, and others as
+desired.  The extracted keywords and data are returned as a pandas
+dataframe which can be exported to a spreadsheet (see wrapper code).
+Alternatively, the wrapper can write file names, line numbers, and
+actual lines, directly to standard output, colorized by default.
 
 An example survex data source file tree for the Dow-Prov system is
 given in the `example` directory.
