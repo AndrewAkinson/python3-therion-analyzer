@@ -107,27 +107,22 @@ This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
 The full usage is
 
 ```
-usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a ADDITIONAL_KEYWORDS] [-e EXCLUDED_KEYWORDS] [-q] [-o OUTPUT] svx_file
+usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a KEYWORDS] [-e KEYWORDS] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
 positional arguments:
-  svx_file              top level survex file (.svx)
+  svx_file                   top level survex file (.svx)
 
 options:
-  -h, --help            show this help message and exit
-  -t, --trace           be verbose about which files are visited
-  -d, --directory-paths
-                        request absolute directory paths in dataframe
-  -k KEYWORDS, --keywords KEYWORDS
-                        a list of keywords (comma-separated, case insensitive) to use instead of default
-  -a ADDITIONAL_KEYWORDS, --additional-keywords ADDITIONAL_KEYWORDS
-                        a list of keywords (--ditto--) to add to the default
-  -e EXCLUDED_KEYWORDS, --excluded-keywords EXCLUDED_KEYWORDS
-                        a list of keywords (--ditto--) to exclude from the default
-  -q, --quiet           only report warnings and errors
-  -o OUTPUT, --output OUTPUT
-                        optionally, output to spreadsheet (.ods, .xlsx)
+  -h, --help                 show this help message and exit
+  -t, --trace                be verbose about which files are visited
+  -d, --directory-paths      request absolute directory paths in dataframe
+  -k, --keywords             a list of keywords (comma-separated, case insensitive) to use instead of default
+  -a, --additional-keywords  a list of keywords (--ditto--) to add to the default
+  -e, --excluded-keywords    a list of keywords (--ditto--) to exclude from the default
+  -q, --quiet                only report warnings and errors
+  -o, --output               (optional) output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
 in the above example.
