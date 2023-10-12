@@ -55,7 +55,7 @@ def svx_open(p, trace):
 
 def svx_readline(fp, line_number):
     '''read a line from the survex file and increment line counter'''
-    return fp.readline(), line_number + 1
+    return fp.readline(), line_number+1
 
 def extract_keyword_arguments(clean, keywords, keyword_char):
     '''Extract a keyword and arguments from a cleaned up line'''
