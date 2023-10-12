@@ -52,7 +52,7 @@ The dataframe has one row for each keyword that is tracked and contains columns 
 * the original line in the survex file.
 
 The default is to report details for the following set of
-possible survex keywords: `INCLUDE`, `BEGIN`, `END`, `FIX`,
+survex keywords: `INCLUDE`, `BEGIN`, `END`, `FIX`,
 `ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`). 
 
 Finer control can be achieved by modifying the `keywords`
