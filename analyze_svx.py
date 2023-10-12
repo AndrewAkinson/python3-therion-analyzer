@@ -55,7 +55,7 @@ if args.excluded_keywords:
     to_be_removed = set(args.excluded_keywords.upper().split(','))
     analyzer.keywords = analyzer.keywords.difference(to_be_removed)
 
-df = analyzer.analyze(args.svx_file, trace=args.trace, absolute_paths=args.directory_paths)
+df = analyzer.analyze(args.svx_file, trace=args.trace, directory_paths=args.directory_paths)
 
 if args.output:
     df.to_excel(args.output, index=False)

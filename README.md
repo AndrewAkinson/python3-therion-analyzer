@@ -8,8 +8,8 @@ v1.0 - initial working version
 
 This repository contains a python package and wrapper code to extract
 selected keywords and associated data from survex data source file
-trees (`.svx` files), following the `include` statements.  Extracted
-keywords include begin and end statements, station fixes, entrance
+trees (`.svx` files), following the file inclusion statements.  Extracted
+keywords can include begin and end statements, station fixes, entrance
 tags, co-ordinate system declarations, and others as desired.  The
 extracted keywords and data are returned as a pandas dataframe which
 can be exported to a spreadsheet (see wrapper code).
@@ -51,12 +51,9 @@ The dataframe has one row for each keyword that is tracked and contains columns 
 * the current survex path;
 * the original line in the survex file.
 
-The default is to report details only for the following set of
+The default is to report details for the following set of
 possible survex keywords: `INCLUDE`, `BEGIN`, `END`, `FIX`,
-`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`).  If
-instantiated with the option `use_extra=True` then the set is extended
-to include `EXPORT`, `DATE`, and `FLAGS` (this may be changed at a
-later date).
+`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`). 
 
 Finer control can be achieved by modifying the `keywords`
 property of the instantiated object before running the analysis.  For
@@ -65,14 +62,12 @@ example to look for just `BEGIN` and `END` statements use
 import survex_analyzer as sa
 ...
 analyzer = sa.Analyzer() # create an instance
-analyzer.keywords = set(['BEGIN', 'END']) # note, this is a SET
+analyzer.keywords = set(['BEGIN', 'END']) # this must be a SET and UPPERCASE
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
-The keyword `INCLUDE` gets added to the set of keywords if it is not
-present already.  The same result though can be obtained by sticking
-with the default set of keywords and filtering the resulting
-dataframe, for example
+The same result though can be obtained by sticking with the default
+set of keywords and filtering the resulting dataframe, for example
 ```python
 df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
 ```
@@ -81,22 +76,19 @@ The full specification of the relevant functions is as follows.  To
 instantiate use
 
 ```python
-import survex_analyzer as sa
-...
-analyzer = sa.Analyzer(use_extra=False, comment_char=';', keyword_char='*')
+analyzer = sa.Analyzer(comment_char=';', keyword_char='*')
 ```
-Here, `use_extra` as already indicated adds some extra keywords, and
-`comment_char` and `keyword_char` allow these characters to be
+Here, `comment_char` and `keyword_char` allow these characters to be
 changed from the defaults.
 
 To analyse a file use
 ```python
-df = analyzer.analyze(top_level_svx_file, trace=False, absolute_paths=False)
+df = analyzer.analyze(top_level_svx_file, trace=False, directory_paths=False)
 ```
 Here, setting `trace=True` makes the function call be verbose about
-which files it is visiting, and `absolute_paths=True` reports absolute
-paths rather than file names relative to the directory containing the
-top level survex file.
+which files it is visiting, and `directory_paths=True` reports
+absolute directory paths rather than file names relative to the
+directory containing the top level survex file.
 
 After running an analysis, `analyzer.top_level` contains the file name
 of the top level survex file.
@@ -115,7 +107,7 @@ This saves the dataframe to a spreadsheet (`dp.ods`) in open document format
 The full usage is
 
 ```
-usage: analyze_svx.py [-h] [-t] [-a] [-e] [-q] [-o OUTPUT] svx_file
+usage: analyze_svx.py [-h] [-t] [-d] [-k KEYWORDS] [-a ADDITIONAL_KEYWORDS] [-e EXCLUDED_KEYWORDS] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
@@ -125,14 +117,30 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -t, --trace           be verbose about which files are visited
-  -a, --absolute-paths  request absolute paths in dataframe
-  -e, --extra           include extra keywords
+  -d, --directory-paths
+                        request absolute directory paths in dataframe
+  -k KEYWORDS, --keywords KEYWORDS
+                        a list of keywords (comma-separated, case insensitive) to use instead of default
+  -a ADDITIONAL_KEYWORDS, --additional-keywords ADDITIONAL_KEYWORDS
+                        a list of keywords (--ditto--) to add to the default
+  -e EXCLUDED_KEYWORDS, --excluded-keywords EXCLUDED_KEYWORDS
+                        a list of keywords (--ditto--) to exclude from the default
   -q, --quiet           only report warnings and errors
   -o OUTPUT, --output OUTPUT
                         optionally, output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
 in the above example.
+
+To repeat the above Dow-Prov example selecting only BEGIN and END keywords at
+the command line, use
+```bash
+./analyze_svx.py example/DowProv -k BEGIN,END -o dp.ods
+```
+Note that the keyword specification is case insensitive here: one can
+equally used `-k begin,end`.  The `-a` and `-e` options work
+similarly, but modify the default keyword set rather than replacing
+it: to omit listing flags for example, use `-e FLAGS`, and so on.
 
 ### Technical notes
 

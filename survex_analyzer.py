@@ -91,7 +91,7 @@ class Analyzer:
     # stack are tuples of file information.  The initial entry (None,
     # None, ...) acts as a sentinel to stop the iteration.
 
-    def analyze(self, svx_file, trace=False, absolute_paths=False):
+    def analyze(self, svx_file, trace=False, directory_paths=False):
         if 'INCLUDE' not in self.keywords: # deal with this case ..
             self.keywords.add('INCLUDE') # by adding the keyword ..
             self.includes = False # but recording that it wasn't explicitly requested
@@ -100,7 +100,7 @@ class Analyzer:
         svx_path = [] # list of elements extracted from begin...end statements
         p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present 
         self.top_level = p # record this
-        if absolute_paths: # use absolute path if requested
+        if directory_paths: # use absolute directory paths if requested
             p = p.absolute()
         fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
         while fp: # will finish when the sentinel is encountered
