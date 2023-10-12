@@ -112,14 +112,14 @@ class Analyzer:
                     row = (p, encoding.upper(), line_number, keyword.upper(),
                            ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
                     rows.append(row) # add to the growing accumulated data
-                    if keyword.lower() == 'begin': # process a BEGIN statement (force lower case)
+                    if keyword.upper() == 'BEGIN': # process a BEGIN statement (force lower case)
                         if arguments:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
                             svx_path.append(begin_path)
                         else: # empty BEGIN statement
                             print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
                         begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
-                    if keyword.lower() == 'end': # process an END statement
+                    if keyword.upper() == 'END': # process an END statement
                         if arguments:
                             end_path = arguments[0].lower() # again lower case
                             begin_path = svx_path.pop()
@@ -129,7 +129,7 @@ class Analyzer:
                                 print(f'END statement line {line_number} in {p}: {line}')
                         else: # empty END statement
                             print(f'WARNING: empty END statement at line {line_number} in {p}')
-                    if keyword.lower() == 'include': # process an include statement
+                    if keyword.upper() == 'INCLUDE': # process an INCLUDE statement
                         stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
                         filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
                         wd = p.parent # the current working directory
