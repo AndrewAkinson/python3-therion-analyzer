@@ -160,19 +160,42 @@ class Analyzer:
 def stringify(df, color=False, paths=False, keyword_char='*'):
     '''Return a pandas series of strings given the keyword table'''
     if color:
-        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis=1)
+        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis='columns')
         if paths:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{r.cfull}', axis=1)
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{r.cfull}', axis='columns')
         else:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{r.cfull}', axis=1)
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{r.cfull}', axis='columns')
         ser = ser.apply(lambda el: el.replace('*', f'{RED}{keyword_char}')) # highlight the keyword character
-        df.drop('cfull', axis=1, inplace=True) # tidy up
+        df.drop('cfull', axis='columns', inplace=True) # tidy up
     else:
         if paths:
-            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.path}:{r.full}', axis=1)
+            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.path}:{r.full}', axis='columns')
         else:
-            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.full}', axis=1)
+            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.full}', axis='columns')
     return ser
+
+def summarize(df, path, color=False):
+    '''Return a pandas series of strings for a summary of the keyword table'''
+    df_summary = df.keyword.value_counts().reset_index(name='total').rename(columns={'index': 'keyword'})
+    if color:
+        ser = df_summary.apply(lambda r: f'{PURPLE}{path}{CYAN}:{RED}{r.keyword}{CYAN}:{NC}{r.total}', axis='columns')
+    else:
+        ser = df_summary.apply(lambda r: f'{path}:{r.keyword}:{r.total}', axis=1)
+    return ser
+
+def summary(df, path, keywords, color=False, extra=None):
+    '''Return a string summarizing the results'''
+    keyword_list = '/'.join(sorted(keywords))
+    if color:
+        summary = f'{PURPLE}{path}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {len(df)} records found'
+    else:
+        summary = f'{path}:{keyword_list}: {len(df)} records found'
+    if extra:
+        if color:
+            summary = summary + f'{YELLOW}{extra}'
+        else:
+            summary = summary + extra
+    return summary
 
 # below here, for testing
 
