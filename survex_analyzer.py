@@ -155,9 +155,6 @@ class Analyzer:
 
         return pd.DataFrame(records, columns=self.schema.keys()).astype(self.schema)
 
-        # The following draws on
-    # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
-
 # Note that colorization of keywords only works if the table has been constructed using the 'preserve_case' attribute above.
 
 def stringify(df, color=False, paths=False, keyword_char='*'):
