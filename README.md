@@ -52,7 +52,7 @@ df = sa.Analyzer(top_level_svx_file).keyword_table()
 The returned pandas dataframe `df` can be further analysed programatically,
 or exported to a spreadsheet for inspection.
 
-The dataframe has one row for each keyword that is tracked and contains columns for:
+The dataframe has one record for each keyword that is tracked and contains columns for:
 
 * the file name;
 * the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);

@@ -88,7 +88,7 @@ class Analyzer:
     # The idea is that we may wish to trim or augment the possible
     # keywords being tracked.  The schema is used to set the column
     # titles and data types in the dataframe.  If it is changed,
-    # matching changes should be made to the 'row =' line below.
+    # matching changes should be made to the 'record =' line below.
     
     def __init__(self, svx_file):
         '''Instantiate with default properties, given a survex top level file'''
@@ -111,7 +111,7 @@ class Analyzer:
         for keyword in ['INCLUDE', 'BEGIN', 'END']: # these ones should always be there
             keywords.add(keyword) 
         stack = [(None, None, 0, '')] # initialise file stack with a sentinel
-        rows = [] # this will accumulate the results row by row
+        records = [] # this will accumulate the results record by record
         svx_path = [] # will be a list of elements extracted from begin..end statements
         p = self.top_level.absolute() if directory_paths else self.top_level # use absolute paths if requested
         fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
@@ -124,9 +124,9 @@ class Analyzer:
                 if keyword: # rejected if none found
                     uc_keyword = keyword.upper() # upper case
                     if uc_keyword in self.keywords: # for inclusion in the output, test against the *original* set of keywords
-                        row = (p, encoding.upper(), line_number, keyword if preserve_case else uc_keyword,
+                        record = (p, encoding.upper(), line_number, keyword if preserve_case else uc_keyword,
                                ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
-                        rows.append(row) # add to the growing accumulated data
+                        records.append(record) # add to the growing accumulated data
                     if uc_keyword == 'BEGIN': # process a BEGIN statement
                         if arguments:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
@@ -153,7 +153,7 @@ class Analyzer:
             fp.close() # we ran out of lines for the file being currently processed
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
-        return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)
+        return pd.DataFrame(records, columns=self.schema.keys()).astype(self.schema)
 
         # The following draws on
     # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
@@ -163,18 +163,18 @@ class Analyzer:
 def stringify(df, color=False, paths=False, keyword_char='*'):
     '''Return a pandas series of strings given the keyword table'''
     if color:
-        df['cfull'] = df.apply(lambda row: row.full.replace(row.keyword, f'{RED}{row.keyword}{NC}'), axis=1)
+        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis=1)
         if paths:
-            ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{BLUE}{row.path}{CYAN}:{row.cfull}', axis=1)
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{r.cfull}', axis=1)
         else:
-            ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{row.cfull}', axis=1)
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{r.cfull}', axis=1)
         ser = ser.apply(lambda el: el.replace('*', f'{RED}{keyword_char}')) # highlight the keyword character
         df.drop('cfull', axis=1, inplace=True) # tidy up
     else:
         if paths:
-            ser = df.apply(lambda row: f'{row.file}:{row.line}:{row.path}:{row.full}', axis=1)
+            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.path}:{r.full}', axis=1)
         else:
-            ser = df.apply(lambda row: f'{row.file}:{row.line}:{row.full}', axis=1)
+            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.full}', axis=1)
     return ser
 
 # below here, for testing
@@ -186,4 +186,3 @@ if __name__ == "__main__":
     df = dow_prov.keyword_table(preserve_case=True)
     for el in stringify(df, color=True):
         print(el)
-

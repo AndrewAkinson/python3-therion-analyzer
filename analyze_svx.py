@@ -61,15 +61,22 @@ if args.excluded_keywords:
 
 df = analyzer.keyword_table(trace=args.trace, directory_paths=args.directory_paths, preserve_case=preserve_case)
 
-if args.output:
+keywords = ','.join(sorted(analyzer.keywords))
 
-    df.to_excel(args.output, index=False)
-    if not args.quiet:
-        keywords = ','.join(sorted(analyzer.keywords))
-        print(f'Keywords {keywords} in {analyzer.top_level} extracted to {args.output} ({len(df)} rows)')
+if  len(df):
+
+    if args.output:
+
+        df.to_excel(args.output, index=False)
+        if not args.quiet:
+            print(f'{analyzer.top_level}: {keywords}: extracted to {args.output} ({len(df)} records)')
+
+    else:
+        
+        for el in sa.stringify(df, paths=args.paths, color=args.color):
+            print(el)
 
 else:
-        
-    for el in sa.stringify(df, paths=args.paths, color=args.color):
-        print(el)
 
+    if not args.quiet:
+        print(f'{analyzer.top_level}: {keywords}: no records found')
