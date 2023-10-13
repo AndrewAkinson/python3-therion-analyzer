@@ -95,8 +95,8 @@ class Analyzer:
         self.top_level = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
         if not self.top_level.exists():
             raise FileNotFoundError(self.top_level)
-        self.comment_char = ';'
         self.keyword_char = '*'
+        self.comment_char = ';'
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
                        'argument':str, 'path':str, 'full':str}
@@ -160,7 +160,7 @@ class Analyzer:
 
 # Note that colorization of keywords only works if the table has been constructed using the 'preserve_case' attribute above.
 
-def stringify(df, color=False, paths=False):
+def stringify(df, color=False, paths=False, keyword_char='*'):
     '''Return a pandas series of strings given the keyword table'''
     if color:
         df['cfull'] = df.apply(lambda row: row.full.replace(row.keyword, f'{RED}{row.keyword}{NC}'), axis=1)
@@ -168,7 +168,7 @@ def stringify(df, color=False, paths=False):
             ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{BLUE}{row.path}{CYAN}:{row.cfull}', axis=1)
         else:
             ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{row.cfull}', axis=1)
-        ser = ser.apply(lambda el: el.replace('*', f'{RED}*')) # highlight the keyword character
+        ser = ser.apply(lambda el: el.replace('*', f'{RED}{keyword_char}')) # highlight the keyword character
         df.drop('cfull', axis=1, inplace=True) # tidy up
     else:
         if paths:

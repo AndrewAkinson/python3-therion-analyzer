@@ -30,7 +30,7 @@ import survex_analyzer as sa
 parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
 parser.add_argument('svx_file', help='top level survex file (.svx)')
 parser.add_argument('-t', '--trace', action='store_true', help='be verbose about which files are visited')
-parser.add_argument('-d', '--directory-paths', action='store_true', help='request absolute directory paths in dataframe')
+parser.add_argument('-d', '--directory-paths', action='store_true', help='use absolute directory paths in dataframe')
 parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
 parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
 parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
