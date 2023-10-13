@@ -36,7 +36,7 @@ Either clone or download the repository and put the python scripts
 where they can be found, for instance in the top level working
 directory for a survey project. The python scripts are:
 
-* `survex_analyzer.py` : a python module implementing the main functionality;
+* `survex_parser.py` : a python module implementing the main functionality;
 * `analyze_svx.py` : a wrapper around the module implementing a command line utility.
 
 ### Usage
@@ -45,9 +45,9 @@ directory for a survey project. The python scripts are:
 
 Basic use:
 ```python
-import survex_analyzer as sa
+import survex_parser as sp
 ...
-analyzer = sa.Analyzer() # create an instance
+analyzer = sp.Analyzer() # create an instance
 df = analyzer.analyze(top_level_svx_file)
 ...
 ```
@@ -72,9 +72,9 @@ Finer control can be achieved by modifying the `keywords`
 property of the instantiated object before running the analysis.  For
 example to look for just `BEGIN` and `END` statements use
 ```python
-import survex_analyzer as sa
+import survex_parser as sp
 ...
-analyzer = sa.Analyzer() # create an instance
+analyzer = sp.Analyzer() # create an instance
 analyzer.keywords = set(['BEGIN', 'END']) # this must be a SET and UPPERCASE
 df = analyzer.analyze(top_level_svx_file)
 ...

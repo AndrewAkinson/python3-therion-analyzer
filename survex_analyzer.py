@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""svx_analyzer.py
+"""survex_parser.py
 Python module for extracting survex keywords from a source data file tree.
 
 For usage see README.md.
@@ -27,6 +27,17 @@ along with this program.  If not, see
 
 import pandas as pd
 from pathlib import Path
+
+# The following are used in colorized strings below and draws on
+# https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+
+NC = '\033[0m'
+RED = '\033[0;31m'
+GREEN = '\033[0;32m'
+YELLOW = '\033[0;33m'
+BLUE = '\033[0;34m'
+PURPLE = '\033[0;35m'
+CYAN = '\033[0;36m'
 
 def svx_encoding(p):
     '''Try to figure out the character encoding that works for a file'''
@@ -79,9 +90,13 @@ class Analyzer:
     # titles and data types in the dataframe.  If it is changed,
     # matching changes should be made to the 'row =' line below.
     
-    def __init__(self, comment_char=';', keyword_char='*'):
-        self.comment_char = comment_char
-        self.keyword_char = keyword_char
+    def __init__(self, svx_file):
+        '''Instantiate with default properties, given a survex top level file'''
+        self.top_level = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
+        if not self.top_level.exists():
+            raise FileNotFoundError(self.top_level)
+        self.comment_char = ';'
+        self.keyword_char = '*'
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
         self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
                        'argument':str, 'path':str, 'full':str}
@@ -90,21 +105,17 @@ class Analyzer:
     # stack are tuples of file information.  The initial entry (None,
     # None, ...) acts as a sentinel to stop the iteration.
 
-    def analyze(self, svx_file, trace=False, directory_paths=False, actual=False):
-        keywords = self.keywords.copy() # make a set copy, to modify as next
-        keywords.add('INCLUDE') # should always be there
-        if 'BEGIN' in keywords or 'END' in keywords: # if there is one there should be the other
-            keywords.add('BEGIN')
-            keywords.add('END')
-        stack = [(None, None, 0, '')] # initialise with a sentinel
-        rows = [] # accumulate the results row by row
-        svx_path = [] # list of elements extracted from begin...end statements
-        p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present 
-        self.top_level = p # record this
-        if directory_paths: # use absolute directory paths if requested
-            p = p.absolute()
+    def keyword_table(self, trace=False, directory_paths=False, preserve_case=False):
+        '''Return a table of keywords in the survex tree, as a pandas dataframe'''
+        keywords = self.keywords.copy() # make a copy, to modify as next
+        for keyword in ['INCLUDE', 'BEGIN', 'END']: # these ones should always be there
+            keywords.add(keyword) 
+        stack = [(None, None, 0, '')] # initialise file stack with a sentinel
+        rows = [] # this will accumulate the results row by row
+        svx_path = [] # will be a list of elements extracted from begin..end statements
+        p = self.top_level.absolute() if directory_paths else self.top_level # use absolute paths if requested
         fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
-        while fp: # will finish when the sentinel is encountered
+        while fp: # will finish when the sentinel is popped off stack
             line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
@@ -112,26 +123,26 @@ class Analyzer:
                 keyword, arguments = extract_keyword_arguments(clean, keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
                     uc_keyword = keyword.upper() # upper case
-                    if uc_keyword in self.keywords: # test against the original set of keywords
-                        row = (p, encoding.upper(), line_number, keyword if actual else uc_keyword,
+                    if uc_keyword in self.keywords: # for inclusion in the output, test against the *original* set of keywords
+                        row = (p, encoding.upper(), line_number, keyword if preserve_case else uc_keyword,
                                ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
                         rows.append(row) # add to the growing accumulated data
                     if uc_keyword == 'BEGIN': # process a BEGIN statement
                         if arguments:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
-                            svx_path.append(begin_path)
-                        else: # empty BEGIN statement
+                            svx_path.append(begin_path) # add to the list of survey path elements
+                            begin_line_number, begin_line = line_number, line # keep a copy for debugging purposes
+                        else: # warn of empty BEGIN statement
                             print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
-                        begin_line_number, begin_line = line_number, line # keep a copy for debugging errors
                     if uc_keyword == 'END': # process an END statement
                         if arguments:
                             end_path = arguments[0].lower() # again lower case
-                            begin_path = svx_path.pop()
-                            if end_path != begin_path:
+                            begin_path = svx_path.pop() # remove the most recent survey path element
+                            if end_path != begin_path: # issue a warning if it is not actually the same
                                 print('WARNING: mismatched BEGIN and END statements:')
                                 print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
                                 print(f'END statement line {line_number} in {p}: {line}')
-                        else: # empty END statement
+                        else: # warn of empty END statement
                             print(f'WARNING: empty END statement at line {line_number} in {p}')
                     if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                         stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
@@ -143,3 +154,36 @@ class Analyzer:
             p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
 
         return pd.DataFrame(rows, columns=self.schema.keys()).astype(self.schema)
+
+        # The following draws on
+    # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+
+# Note that colorization of keywords only works if the table has been constructed using the 'preserve_case' attribute above.
+
+def stringify(df, color=False, paths=False):
+    '''Return a pandas series of strings given the keyword table'''
+    if color:
+        df['cfull'] = df.apply(lambda row: row.full.replace(row.keyword, f'{RED}{row.keyword}{NC}'), axis=1)
+        if paths:
+            ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{BLUE}{row.path}{CYAN}:{row.cfull}', axis=1)
+        else:
+            ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{row.cfull}', axis=1)
+        ser = ser.apply(lambda el: el.replace('*', f'{RED}*')) # highlight the keyword character
+        df.drop('cfull', axis=1, inplace=True) # tidy up
+    else:
+        if paths:
+            ser = df.apply(lambda row: f'{row.file}:{row.line}:{row.path}:{row.full}', axis=1)
+        else:
+            ser = df.apply(lambda row: f'{row.file}:{row.line}:{row.full}', axis=1)
+    return ser
+
+# below here, for testing
+
+if __name__ == "__main__":
+
+    dow_prov = Analyzer('sample/DowProv')
+    dow_prov.keywords = set(['CS', 'FIX'])
+    df = dow_prov.keyword_table(preserve_case=True)
+    for el in stringify(df, color=True):
+        print(el)
+

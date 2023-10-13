@@ -35,17 +35,18 @@ parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (c
 parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
 parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
 parser.add_argument('-q', '--quiet', action='store_true', help='only report warnings and errors')
-parser.add_argument('-n', '--no-color', action='store_true', help='omit colorization when output directly')
+parser.add_argument('-p', '--paths', action='store_true', help='include survex path when output directly')
+parser.add_argument('-c', '--color', action='store_true', help='colorize when output directly')
 parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
 args = parser.parse_args()
 
-actual = (not args.output) # used for colorizing output below
+preserve_case = (not args.output) # used for colorizing output below
     
 # For the time being assume the comment character (;) and keyword
 # character (*) are the defaults.  This can be fixed if it ever
 # becomes an issue.
 
-analyzer = sa.Analyzer() # create a new instance
+analyzer = sa.Analyzer(args.svx_file) # create a new instance
 
 if args.keywords:
     analyzer.keywords = set(args.keywords.upper().split(','))
@@ -58,34 +59,17 @@ if args.excluded_keywords:
     to_be_removed = set(args.excluded_keywords.upper().split(','))
     analyzer.keywords = analyzer.keywords.difference(to_be_removed)
 
-df = analyzer.analyze(args.svx_file, trace=args.trace, directory_paths=args.directory_paths, actual=actual)
+df = analyzer.keyword_table(trace=args.trace, directory_paths=args.directory_paths, preserve_case=preserve_case)
 
 if args.output:
-    
+
     df.to_excel(args.output, index=False)
     if not args.quiet:
         keywords = ','.join(sorted(analyzer.keywords))
         print(f'Keywords {keywords} in {analyzer.top_level} extracted to {args.output} ({len(df)} rows)')
 
 else:
-
-    # The following draws on
-    # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
-    
-    NC = '\033[0m'
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[0;33m'
-    PURPLE = '\033[0;35m'
-    CYAN = '\033[0;36m'
-
-    if args.no_color:
-        ser = df.apply(lambda row: f'{row.file}:{row.line}:{row.full}', axis=1) # a pandas series
-    else:
-        df['full'] = df.apply(lambda row: row.full.replace(row.keyword, f'{RED}{row.keyword}{NC}'), axis=1)
-        ser = df.apply(lambda row: f'{PURPLE}{row.file}{CYAN}:{GREEN}{row.line}{CYAN}:{NC}{row.full}', axis=1)
-        ser = ser.apply(lambda el: el.replace('*', f'{YELLOW}*{NC}')) # highlight the keyword character
-
-    for el in ser:
+        
+    for el in sa.stringify(df, paths=args.paths, color=args.color):
         print(el)
 
