@@ -108,8 +108,7 @@ class Analyzer:
     def keyword_table(self, trace=False, directory_paths=False, preserve_case=False):
         '''Return a table of keywords in the survex tree, as a pandas dataframe'''
         keywords = self.keywords.copy() # make a copy, to modify as next
-        for keyword in ['INCLUDE', 'BEGIN', 'END']: # these ones should always be there
-            keywords.add(keyword) 
+        keywords = keywords.union(set(['INCLUDE', 'BEGIN', 'END'])) # these should always be there
         stack = [(None, None, 0, '')] # initialise file stack with a sentinel
         records = [] # this will accumulate the results record by record
         svx_path = [] # will be a list of elements extracted from begin..end statements
@@ -145,7 +144,7 @@ class Analyzer:
                         else: # warn of empty END statement
                             print(f'WARNING: empty END statement at line {line_number} in {p}')
                     if uc_keyword == 'INCLUDE': # process an INCLUDE statement
-                        stack.append((p, fp, line_number, encoding)) # push the current path, pointer, line number and encoding onto stack
+                        stack.append((p, fp, line_number, encoding)) # push the path, pointer, line number and encoding onto stack
                         filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
                         p = Path(p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
                         fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
@@ -155,17 +154,26 @@ class Analyzer:
 
         return pd.DataFrame(records, columns=self.schema.keys()).astype(self.schema)
 
-# Note that colorization of keywords only works if the table has been constructed using the 'preserve_case' attribute above.
+# Note that colorization of keywords only works if the table has been
+# constructed using the 'preserve_case' attribute above.  In
+# colorizing the keywords, we first create a new column in the
+# dataframe 'cfull' which contains a code NC to revert to normal color
+# after the identified keyword.  We then build the series of strings,
+# and finally inject a color code RED in advance of the keyword
+# character.  The result is that the returned strings have the keyword
+# character (* usually) and the keyword sandwiched in RED..NC. This
+# takes care of any cases where there is a space between the keyword
+# character and the keyword itself.
 
 def stringify(df, color=False, paths=False, keyword_char='*'):
     '''Return a pandas series of strings given the keyword table'''
     if color:
-        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis='columns')
+        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{r.keyword}{NC}'), axis='columns')
         if paths:
             ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{r.cfull}', axis='columns')
         else:
             ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{r.cfull}', axis='columns')
-        ser = ser.apply(lambda el: el.replace('*', f'{RED}{keyword_char}')) # highlight the keyword character
+        ser = ser.apply(lambda el: el.replace(keyword_char, f'{RED}{keyword_char}')) # highlight the keyword
         df.drop('cfull', axis='columns', inplace=True) # tidy up
     else:
         if paths:
@@ -201,7 +209,7 @@ def summary(df, path, keywords, color=False, extra=None):
 
 if __name__ == "__main__":
 
-    dow_prov = Analyzer('sample/DowProv')
+    dow_prov = Analyzer('DowProv/DowProv')
     dow_prov.keywords = set(['CS', 'FIX'])
     df = dow_prov.keyword_table(preserve_case=True)
     for el in stringify(df, color=True):
