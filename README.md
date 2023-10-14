@@ -1,4 +1,4 @@
-## Python code to extract keywords from survex data source files
+## Python code to analyze survex data source files
 
 _Current version:_
 
@@ -6,21 +6,24 @@ v1.0 - initial working version
 
 ### Summary
 
-This repository contains a python package and wrapper code to extract
-selected keywords and associated data from survex data source file
-trees (`.svx` files), following the file inclusion statements.
-Extracted keywords can include begin and end statements, station
-fixes, entrance tags, co-ordinate system declarations, and others as
-desired.  The extracted keywords and data are returned as a pandas
-dataframe which can be exported to a spreadsheet (see wrapper code).
-Alternatively, the wrapper can write file names, line numbers, and
-actual lines, directly to terminal output for easy visual inspection.
+This repository contains python code to analyze survex data source
+file trees (`.svx` files):
+
+* `svx_keywords.py` extracts selected keywords and associated data;
+* `svx_grep.py` is a generic search tool along the lines of the unix `grep` utility.
+
+Both parse the source file and follow file inclusion statements.  For
+the first, extracted keywords can include begin and end statements,
+station fixes, entrance tags, co-ordinate system declarations, and
+others as desired. 
 
 A survex data source file tree for the Dow-Prov system is given in the
-`DowProv` directory.  To show the fixed points and co-ordinate system
-definitions for this system one would have, for example,
+`DowProv` directory.
+
+For example, to extract fixed points and co-ordinate system
+definitions use
 ```
-$ ./analyze_svx.py DowProv/DowProv -c -k cs,fix
+$ ./svx_keywords.py DowProv/DowProv -c -k cs,fix
 DowProv/DowProv.svx:41:*cs OSGB:SD
 DowProv/DowProv.svx:42:*cs out EPSG:7405
 DowProv/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
@@ -31,106 +34,29 @@ On a terminal screen, this output would be colorized (`-c` option).
 
 ### Installation
 
-Either clone or download the repository and put the python scripts
-where they can be found, for instance in the top level working
-directory for a survey project. The python scripts are:
+* Either clone or download the repository, or just download the two
+key python scriptps `svx_keywords.py` and `svx_grep.py`;
 
-* `survex_parser.py` : a python module implementing the main functionality;
-* `analyze_svx.py` : a wrapper around the module implementing a command line utility.
+* Put these somewhere where they can be found, for instance in the top
+level working directory for a survey project.
 
 ### Usage
 
-#### In a python script or jupyter notebook
+#### As a command line tool
 
-Basic use (example):
-```python
-import survex_analyzer as sa
-...
-df = sa.Analyzer(top_level_svx_file).keyword_table()
-...
-```
-The returned pandas dataframe `df` can be further analysed programatically,
-or exported to a spreadsheet for inspection.
-
-The dataframe has one record for each keyword that is tracked and contains fields for:
-
-* the file name;
-* the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);
-* the line number in the file;
-* the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
-* the argument(s) following the keyword, if any;
-* the current survex path;
-* the full original line in the survex file.
-
-The default is to report details for the following set of
-survex keywords: `INCLUDE`, `BEGIN`, `END`, `FIX`,
-`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`). 
-
-Finer control can be achieved by modifying the `keywords`
-property of the instantiated object before running the analysis.  For
-example to look for just `BEGIN` and `END` statements use
-```python
-import survex_analyzer as sa
-...
-analyzer = sa.Analyzer(top_level_svx_file) # create a named instance
-analyzer.keywords = set(['BEGIN', 'END']) # this must be a SET and UPPERCASE
-df = analyzer.keyword_table()
-...
-```
-The same result though can be obtained by sticking with the default
-set of keywords and filtering the resulting dataframe, using
-```python
-df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
-```
-or more succinctly
-```python
-df[(df.keyword == 'BEGIN') | (df.keyword == 'END')]
-```
-
-The full specification of the relevant functions is as follows.  To
-instantiate use
-
-```python
-analyzer = sa.Analyzer(top_level_svx_file)
-```
-where `top_level_svx_file` is the top level `.svx` file you want to
-start the analysis with (the file extension is added if it is not
-already there).
-
-The object thus created has properties `keyword_char` and `comment_char`
-which are initialised to `*` and `;` respectively, but can be changed
-at this point.
-
-To obtain the keyword table do
-```python
-df = analyzer.keyword_table(trace=False, directory_paths=False, preserve_case=False)
-```
-Here, setting `trace=True` makes the function call be verbose about
-which files it is visiting; `directory_paths=True` reports absolute
-directory paths in the table rather than file names relative to the
-directory containing the top level survex file; and `preserve_case=True`
-reports the actual keywords rather than the capitalised ones.  The
-function returns a pandas dataframe as indicated above.  
-
-Normally one would run this with `preserve_case=False` (the default)
-since it means that the entries in the keyword field of the
-dataframe are all capitalised and so can be filtered more efficiently.
-
-#### With the command line tool
-
-The command line tool `analyze_svx.py` provides a convenient interface
-to the underlying module.  For example to generate a spreadsheet for
+Used as a command line tool, `svx_keywords.py` provides a convenient interface
+to the underlying functionality.  For example to generate a spreadsheet for
 the Dow-Prov case
 ```bash
-./analyze_svx.py DowProv/DowProv -o dp.ods
+./svx_keywords.py DowProv/DowProv -o dp.ods
 ```
-The dataframe is saved to `dp.ods` in open document format
-(`.ods`); it can then be loaded into Excel or libreoffice.
+The resulting spreadsheet, here in open document format (`.ods`), can be
+loaded into Excel or libreoffice.
 
 The full usage is
 
 ```
-usage: analyze_svx.py [-h] [-v] [-d] [-k KEYWORDS] [-a KEYWORDS]
+usage: svx_keywords.py [-h] [-v] [-d] [-k KEYWORDS] [-a KEYWORDS]
             [-e KEYWORDS] [-t] [-s] [-q] [-p] [-c] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
@@ -161,6 +87,9 @@ begin,end` is the same as `-k BEGIN,END`, and so on.  The `-a` and
 `-e` options work similarly, but modify the default keyword set rather
 than replacing it.  Thus to omit all the `EQUATE` commands from the
 default set, for example, use `-e EQUATE` or `-e equate`, and so on.
+If keywords are not explicitly specified, the default is to report
+details for the following set: `INCLUDE`, `BEGIN`, `END`, `FIX`,
+`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`).
 
 If `-o` is not specified the command writes the table as a list of
 file names and line numbers with the associated lines to terminal
@@ -172,6 +101,74 @@ keywords additionally highlighted.
 Summary information can be obtained with the `-t` and `-s` options.
 These can be combined with each other, and with `-o` (which always prints
 a summary unless `-q` is specified), and colorized by `-c`.
+
+The spreadsheet that is generated has one line for each keyword that
+is tracked and contains columns for:
+
+* the file name;
+* the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);
+* the line number in the file;
+* the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
+* the argument(s) following the keyword, if any;
+* the current survex path;
+* the full original line in the survex file.
+
+The second script `svx_grep.py` reproduces some of the functionality
+of the unix `grep` utility in pattern-matching lines in survex source
+files.  It differs from regular `grep` because it strictly follows the
+include hierarchy, and because it additionally tracks begin and end
+statements.  The usage is TO BE COMPLETED...
+
+#### In a python script or jupyter notebook
+
+The script `svx_keywords.py` can also be loaded as a python module in
+a python script or jupyter notebook.  The basic usage is
+```python
+from svx_keywords import Analyzer
+...
+df = Analyzer('DowProv/DowProv').keyword_table()
+...
+```
+The returned pandas dataframe `df` is stuctured the same way as the
+spreadsheet (in fact, it is exported as such in the command line
+version).
+
+Here, finer control can be achieved by modifying the `keywords`
+property of the instantiated object before running the analysis.  For
+example to look for just `BEGIN` and `END` statements use
+```python
+from svx_keywords import Analyzer
+...
+analyzer = Analyzer('DowProv/DowProv') # create a named instance
+analyzer.keywords = set(['BEGIN', 'END']) # this must be a SET and UPPERCASE
+df = analyzer.keyword_table()
+...
+```
+The same result though can be obtained by sticking with the default
+set of keywords and filtering the resulting dataframe, using
+```python
+df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
+```
+or more succinctly
+```python
+df[(df.keyword == 'BEGIN') | (df.keyword == 'END')]
+```
+In addition to the keywords, the `Analyzer` object has properties
+`keyword_char` and `comment_char` which are initialised to `*` and `;`
+respectively, but can be changed before calling `keyword_table`.
+
+The function `keyword_table` has some additional boolean flags as
+parameters: `trace=True` makes the function call be verbose about
+which files it is visiting; `directory_paths=True` reports absolute
+directory paths in the table rather than file names relative to the
+directory containing the top level survex file; and
+`preserve_case=True` reports the actual keywords rather than the
+capitalised ones.
+
+Normally one would use `preserve_case=False` (the default) since it
+means that the entries in the keyword column of the dataframe are
+capitalised and so can be processed without worrying about case
+sensitivity.
 
 ### Technical notes
 
@@ -195,7 +192,7 @@ for survey path names introduced by begin and end statements to be
 forced to lower case.  For keywords, capitalisation is irrelevant, for
 example `*BEGIN` and `*Begin` are equally valid as `*begin`.  Also,
 there can be space between the keyword character and the keyword
-itself so that `* begin` is the same as `*begin`.  Again the parser
+itself so that `* begin` is the same as `*begin`.  Again the code
 should handle these cases transparently.  By default, the entries in
 the keyword field of the dataframe are converted to upper case to
 facilitate further processing, but the case can be preserved if
@@ -203,7 +200,7 @@ requested (`preserve_case=True`).  The keyword character (by
 default `*`) is not included for the entries in this field.
 
 Generally if a survex file can be successfully processed by `cavern`,
-then it ought to be parsable by the present scripts.  The parser has
+then it ought to be parsable by the present scripts.  The code has
 been checked against the Leck-Masongill data set and the
 EaseGill-Pippikin data set, as well as the Dow-Prov case.
 
