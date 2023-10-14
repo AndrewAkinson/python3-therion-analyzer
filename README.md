@@ -120,9 +120,9 @@ dataframe are all capitalised and so can be filtered more efficiently.
 
 The command line tool `analyze_svx.py` provides a convenient interface
 to the underlying module.  For example to generate a spreadsheet for
-the Dow-Prov sample run
+the Dow-Prov case
 ```bash
-./analyze_svx.py sample/DowProv -o dp.ods
+./analyze_svx.py DowProv/DowProv -o dp.ods
 ```
 The dataframe is saved to `dp.ods` in open document format
 (`.ods`); it can then be loaded into Excel or libreoffice.
@@ -205,7 +205,7 @@ default `*`) is not included for the entries in this field.
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present scripts.  The parser has
 been checked against the Leck-Masongill data set and the
-EaseGill-Pippikin data set, as well as the Dow-Prov sample.
+EaseGill-Pippikin data set, as well as the Dow-Prov case.
 
 ### Open issues
 
