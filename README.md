@@ -16,18 +16,16 @@ dataframe which can be exported to a spreadsheet (see wrapper code).
 Alternatively, the wrapper can write file names, line numbers, and
 actual lines, directly to terminal output for easy visual inspection.
 
-A sample survex data source file tree for the Dow-Prov system is
-given in the `sample` directory.  
-
-To show the fixed points and co-ordinate system definitions for this 
-system one would have, for example,
+A survex data source file tree for the Dow-Prov system is given in the
+`DowProv` directory.  To show the fixed points and co-ordinate system
+definitions for this system one would have, for example,
 ```
-$ ./analyze_svx.py sample/DowProv -c -k cs,fix
-sample/DowProv.svx:41:*cs OSGB:SD
-sample/DowProv.svx:42:*cs out EPSG:7405
-sample/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
-sample/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
-sample/HagDyke.svx:14:*fix W 98981 73327 459
+$ ./analyze_svx.py DowProv/DowProv -c -k cs,fix
+DowProv/DowProv.svx:41:*cs OSGB:SD
+DowProv/DowProv.svx:42:*cs out EPSG:7405
+DowProv/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
+DowProv/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
+DowProv/HagDyke.svx:14:*fix W 98981 73327 459
 ```
 On a terminal screen, this output would be colorized (`-c` option).
 
