@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-"""survex_parser.py
-Python module for extracting survex keywords from a source data file tree.
+"""svx_keywords.py
+Python module and wrapper code for extracting survex keywords
+from a source data file tree.
 
 For usage see README.md.
 
-Copyright (C) 2023 Patrick B Warren
+Copyright (c) 2023 Patrick B Warren
 
 Email: patrickbwarren@gmail.com
 
@@ -27,17 +28,6 @@ along with this program.  If not, see
 
 import pandas as pd
 from pathlib import Path
-
-# The following are used in colorized strings below and draws on
-# https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
-
-NC = '\033[0m'
-RED = '\033[0;31m'
-GREEN = '\033[0;32m'
-YELLOW = '\033[0;33m'
-BLUE = '\033[0;34m'
-PURPLE = '\033[0;35m'
-CYAN = '\033[0;36m'
 
 def svx_encoding(p):
     '''Try to figure out the character encoding that works for a file'''
@@ -154,6 +144,18 @@ class Analyzer:
 
         return pd.DataFrame(records, columns=self.schema.keys()).astype(self.schema)
 
+    
+# The following are used in colorized strings below and draws on
+# https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+
+NC = '\033[0m'
+RED = '\033[0;31m'
+GREEN = '\033[0;32m'
+YELLOW = '\033[0;33m'
+BLUE = '\033[0;34m'
+PURPLE = '\033[0;35m'
+CYAN = '\033[0;36m'
+
 # Note that colorization of keywords only works if the table has been
 # constructed using the 'preserve_case' attribute above.  In
 # colorizing the keywords, we first create a new column in the
@@ -182,6 +184,10 @@ def stringify(df, color=False, paths=False, keyword_char='*'):
             ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.full}', axis='columns')
     return ser
 
+# Here we use the pandas value_counts function to count numbers of
+# keywords.  This returns a series which is here converted to a
+# dataframe with appropriately named columns.
+
 def summarize(df, path, color=False):
     '''Return a pandas series of strings for a summary of the keyword table'''
     df_summary = df.keyword.value_counts().reset_index(name='total').rename(columns={'index': 'keyword'})
@@ -205,12 +211,69 @@ def summary(df, path, keywords, color=False, extra=None):
             summary = summary + extra
     return summary
 
-# below here, for testing
+# Wrapper code below here
 
 if __name__ == "__main__":
 
-    dow_prov = Analyzer('DowProv/DowProv')
-    dow_prov.keywords = set(['CS', 'FIX'])
-    df = dow_prov.keyword_table(preserve_case=True)
-    for el in stringify(df, color=True):
-        print(el)
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
+    parser.add_argument('svx_file', help='top level survex file (.svx)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='be verbose about which files are visited')
+    parser.add_argument('-d', '--directories', action='store_true', help='record absolute directories instead of relative ones')
+    parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
+    parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
+    parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
+    parser.add_argument('-t', '--totals', action='store_true', help='print totals for each keyword')
+    parser.add_argument('-s', '--summarize', action='store_true', help='print a one-line summary')
+    parser.add_argument('-q', '--quiet', action='store_true', help='only print warnings and errors (in case of -o only)')
+    parser.add_argument('-p', '--paths', action='store_true', help='include survex path in output')
+    parser.add_argument('-c', '--color', action='store_true', help='colorize printed results')
+    parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
+    args = parser.parse_args()
+
+    # cases when results are written directly to terminal
+
+    preserve_case = (not args.output) and (not args.summarize) and (not args.totals)
+
+    # For the time being assume the comment character (;) and keyword
+    # character (*) are the defaults.  This can be fixed if it ever
+    # becomes an issue.
+
+    analyzer = Analyzer(args.svx_file) # create a new instance
+
+    if args.keywords:
+        analyzer.keywords = set(args.keywords.upper().split(','))
+
+    if args.additional_keywords:
+        to_be_added = set(args.additional_keywords.upper().split(','))
+        analyzer.keywords = analyzer.keywords.union(to_be_added)
+
+    if args.excluded_keywords:
+        to_be_removed = set(args.excluded_keywords.upper().split(','))
+        analyzer.keywords = analyzer.keywords.difference(to_be_removed)
+
+    df = analyzer.keyword_table(trace=args.verbose, directory_paths=args.directories, preserve_case=preserve_case)
+
+    # The convoluted logic here hopefully does the expected thing if
+    # the user selects multiple options.  In particular one can use -t
+    # to report totals as well as -o to save to a spreadsheet.
+
+    if len(df):
+        if args.totals or args.summarize:
+            if args.totals:
+                for el in summarize(df, analyzer.top_level, color=args.color):
+                    print(el)
+            if args.summarize and not args.output:
+                print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))
+        if args.output:
+            df.to_excel(args.output, index=False)
+            if not args.quiet or args.summarize:
+                print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color, extra=f' > {args.output}'))
+        else:
+            if not args.totals and not args.summarize:
+                for el in stringify(df, paths=args.paths, color=args.color):
+                    print(el)
+    else:
+        if not args.quiet:
+            print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))
