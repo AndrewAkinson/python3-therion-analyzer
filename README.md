@@ -42,7 +42,7 @@ level working directory for a survey project.
 
 ### Usage
 
-#### As a command line tool
+#### As command line tools
 
 Used as a command line tool, `svx_keywords.py` provides a convenient interface
 to the underlying functionality.  For example to generate a spreadsheet for
