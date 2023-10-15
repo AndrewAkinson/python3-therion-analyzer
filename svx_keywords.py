@@ -26,6 +26,7 @@ along with this program.  If not, see
 
 """
 
+import re
 import pandas as pd
 from pathlib import Path
 
@@ -85,6 +86,7 @@ class Analyzer:
         self.top_level = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
         if not self.top_level.exists():
             raise FileNotFoundError(self.top_level)
+        self.pattern = None # set in simple grep mode
         self.keyword_char = '*'
         self.comment_char = ';'
         self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
@@ -108,6 +110,11 @@ class Analyzer:
             line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
             while line: # loop until we run out of lines
                 line = line.strip() # remove leading and trailing whitespace then remove comments
+                if self.pattern: # simple grep mode
+                    match = self.pattern.search(line)
+                    if match: # add a result into the table of results
+                        record = (p, encoding.upper(), line_number, match.group(), '', '.'.join(svx_path), line.expandtabs()) # avoid tabs here (!!)
+                        records.append(record) # add to the growing accumulated data
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
                 keyword, arguments = extract_keyword_arguments(clean, keywords, self.keyword_char) # preserving case
                 if keyword: # rejected if none found
@@ -159,23 +166,20 @@ CYAN = '\033[0;36m'
 # Note that colorization of keywords only works if the table has been
 # constructed using the 'preserve_case' attribute above.  In
 # colorizing the keywords, we first create a new column in the
-# dataframe 'cfull' which contains a code NC to revert to normal color
-# after the identified keyword.  We then build the series of strings,
-# and finally inject a color code RED in advance of the keyword
-# character.  The result is that the returned strings have the keyword
-# character (* usually) and the keyword sandwiched in RED..NC. This
-# takes care of any cases where there is a space between the keyword
-# character and the keyword itself.
+# dataframe 'cfull' which colorizes the keyword or match in the line.
 
-def stringify(df, color=False, paths=False, keyword_char='*'):
+def stringify(df, color=False, paths=False, keyword_char='*', grep_mode=False):
     '''Return a pandas series of strings given the keyword table'''
     if color:
-        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{r.keyword}{NC}'), axis='columns')
+        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis='columns')
         if paths:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{r.cfull}', axis='columns')
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{NC}{r.cfull}', axis='columns')
         else:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{r.cfull}', axis='columns')
-        ser = ser.apply(lambda el: el.replace(keyword_char, f'{RED}{keyword_char}')) # highlight the keyword
+            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{NC}{r.cfull}', axis='columns')
+        if not grep_mode:
+            ser = ser.apply(lambda el: el.replace(f'{RED}', '')) # remove the color change in front of the keyword
+            ser = ser.apply(lambda el: el.replace(keyword_char, f'{RED}{keyword_char}')) # and reinsert before keyword character
+            ser = ser.apply(lambda el: el.replace(f'{NC}{RED}', f'{RED}')) # simplify
         df.drop('cfull', axis='columns', inplace=True) # tidy up
     else:
         if paths:
@@ -199,7 +203,7 @@ def summarize(df, path, color=False):
 
 def summary(df, path, keywords, color=False, extra=None):
     '''Return a string summarizing the results'''
-    keyword_list = '/'.join(sorted(keywords))
+    keyword_list = '|'.join(sorted(keywords))
     if color:
         summary = f'{PURPLE}{path}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {len(df)} records found'
     else:
@@ -227,14 +231,12 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--totals', action='store_true', help='print totals for each keyword')
     parser.add_argument('-s', '--summarize', action='store_true', help='print a one-line summary')
     parser.add_argument('-q', '--quiet', action='store_true', help='only print warnings and errors (in case of -o only)')
+    parser.add_argument('-g', '--grep', default=None, help='pattern to match (grep mode)')
+    parser.add_argument('-i', '--ignore-case', action='store_true', help='ignore case (grep mode)')
     parser.add_argument('-p', '--paths', action='store_true', help='include survex path in output')
     parser.add_argument('-c', '--color', action='store_true', help='colorize printed results')
     parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
     args = parser.parse_args()
-
-    # cases when results are written directly to terminal
-
-    preserve_case = (not args.output) and (not args.summarize) and (not args.totals)
 
     # For the time being assume the comment character (;) and keyword
     # character (*) are the defaults.  This can be fixed if it ever
@@ -242,16 +244,28 @@ if __name__ == "__main__":
 
     analyzer = Analyzer(args.svx_file) # create a new instance
 
-    if args.keywords:
-        analyzer.keywords = set(args.keywords.upper().split(','))
+    if args.grep: # simple grep mode
+        
+        flags = re.IGNORECASE if args.ignore_case else 0
+        analyzer.pattern = re.compile(args.grep, flags=flags)
+        analyzer.keywords = set() # an empty set
+        args.totals = args.summarize = False
+        args.oputput = None
 
-    if args.additional_keywords:
-        to_be_added = set(args.additional_keywords.upper().split(','))
-        analyzer.keywords = analyzer.keywords.union(to_be_added)
+    else:
 
-    if args.excluded_keywords:
-        to_be_removed = set(args.excluded_keywords.upper().split(','))
-        analyzer.keywords = analyzer.keywords.difference(to_be_removed)
+        if args.keywords:
+            analyzer.keywords = set(args.keywords.upper().split(','))
+
+        if args.additional_keywords:
+            to_be_added = set(args.additional_keywords.upper().split(','))
+            analyzer.keywords = analyzer.keywords.union(to_be_added)
+
+        if args.excluded_keywords:
+            to_be_removed = set(args.excluded_keywords.upper().split(','))
+            analyzer.keywords = analyzer.keywords.difference(to_be_removed)
+
+    preserve_case = (not args.output) and (not args.summarize) and (not args.totals)
 
     df = analyzer.keyword_table(trace=args.verbose, directory_paths=args.directories, preserve_case=preserve_case)
 
@@ -272,8 +286,8 @@ if __name__ == "__main__":
                 print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color, extra=f' > {args.output}'))
         else:
             if not args.totals and not args.summarize:
-                for el in stringify(df, paths=args.paths, color=args.color):
+                for el in stringify(df, paths=args.paths, color=args.color, grep_mode=args.grep):
                     print(el)
     else:
-        if not args.quiet:
+        if not args.quiet and not args.grep:
             print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))

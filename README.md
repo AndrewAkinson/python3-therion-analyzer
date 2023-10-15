@@ -35,7 +35,7 @@ On a terminal screen, this output would be colorized (`-c` option).
 ### Installation
 
 * Either clone or download the repository, or just download the two
-key python scriptps `svx_keywords.py` and `svx_grep.py`;
+key python scripts `svx_keywords.py` and `svx_grep.py`;
 
 * Put these somewhere where they can be found, for instance in the top
 level working directory for a survey project.
@@ -44,9 +44,10 @@ level working directory for a survey project.
 
 #### As command line tools
 
-Used as a command line tool, `svx_keywords.py` provides a convenient interface
-to the underlying functionality.  For example to generate a spreadsheet for
-the Dow-Prov case
+Used as a command line tool, `svx_keywords.py` provides a convenient
+interface to the underlying functionality which is based around
+building a pandas dataframe containing the requested information.  For
+example, to save this dataframe as a spreadsheet for the Dow-Prov case, use
 ```bash
 ./svx_keywords.py DowProv/DowProv -o dp.ods
 ```
@@ -91,19 +92,21 @@ If keywords are not explicitly specified, the default is to report
 details for the following set: `INCLUDE`, `BEGIN`, `END`, `FIX`,
 `ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`).
 
-If `-o` is not specified the command writes the table as a list of
-file names and line numbers with the associated lines to terminal
-output.  With the `-p` option, additional survey path information is
-included.  If additionally `-c` option is present, this output is
-colorized like `grep -n` with the path information (if present) and
-keywords additionally highlighted.
+If `-o` is not specified the command writes the extracted information
+as a list of file names and line numbers with the associated lines to
+terminal output.  With the `-p` option, additional survey path
+information is included.  If additionally `-c` option is present, this
+output is colorized like `grep -n` with the path information (if
+present) and keywords additionally highlighted.
 
 Summary information can be obtained with the `-t` and `-s` options.
 These can be combined with each other, and with `-o` (which always prints
 a summary unless `-q` is specified), and colorized by `-c`.
 
-The spreadsheet that is generated has one line for each keyword that
-is tracked and contains columns for:
+With the `-o` option, the internal pandas dataframe is saved to a
+spreadsheet.  The top row is a header row, then there is one row for
+each keyword instance, in the order in which they appeared when
+parsing the sources.  The columns are
 
 * the file name;
 * the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);
