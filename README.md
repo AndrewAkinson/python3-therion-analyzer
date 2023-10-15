@@ -8,16 +8,18 @@ v1.0 - initial working version
 
 The python script `svx_keywords.py` in this repository analyzes survex
 data source file trees (`.svx` files).  It can be used to search for
-keywords such as file includes, begin and end statements, station fixes, entrance
-tags, co-ordinate system declarations, and others as desired.  A
-'grep-like' regular expression pattern matching mode is also
-available.
+keywords such as file `INCLUDE`s, `BEGIN` and `END` statements,
+station `FIX`es, `ENTRANCE` tags, co-ordinate system (`CS`)
+declarations, and others as desired.  A 'grep-like' regular expression
+pattern matching mode is also available.
 
-The key feature that distinguishes this bespoke utility from generic file
-system tools such as `find` and `grep` is that the code parses the
-survex source file and follows the file inclusion statements,
-reporting results in logical order, and additionally keeping track of
-the survex station naming hierarchy of begin/end statements.
+The key feature that distinguishes this bespoke utility from generic
+file system tools such as `find` and `grep` is that the code parses
+the survex source file _tree_, following the file inclusion
+statements, thus treating the survey data sett _holistically_ rather
+than as a collection of `.svx` files.  It reports results in logical
+order, and additionally keeps track of the survex station naming
+hierarchy of begin/end statements.
 
 For example, to extract fixed points and co-ordinate system
 definitions for the Dow-Prov system from the sample survex data source
@@ -94,6 +96,9 @@ additional spaces, for example `-k cs,fix` used in the introductory
 example.  The `-a` and `-e` options work similarly, but _modify_ the
 default keyword set rather than replacing it.
 
+Note that only _active_ keywords are found, not any that have been
+'commented out'.
+
 With the `-o` option, the internal pandas dataframe is saved to a
 spreadsheet.  The top row is a header row, then there is one row for
 each keyword instance, in the order in which they appeared when
@@ -137,6 +142,11 @@ there are no pattern matches in 'grep' mode, the script returns with
 exit code 1 but no lines of output (modeled on the behavior of `grep`
 itself).
 
+The 'grep' mode can be used to search for _all_ instances of a
+keyword in the files, not just active ones that are reported by the
+default mode of the tool.  This can be useful to find instances where
+keywords have been 'commented out'.  
+
 #### In a python script or jupyter notebook
 
 The script `svx_keywords.py` can also be loaded as a python module in
@@ -153,29 +163,29 @@ df = Analyzer('DowProv/DowProv').keyword_table()
 This employs the default set of keywords listed above, but fine
 control can be achieved by modifying the `keywords` property of the
 instantiated object before running the analysis.  For example to look
-for just `BEGIN` and `END` statements use
+for just `CS` and `FIX` statements as in the initial example use
 ```python
 from svx_keywords import Analyzer
 ...
 analyzer = Analyzer('DowProv/DowProv') # create a named instance
-analyzer.keywords = set(['BEGIN', 'END']) # this must be a SET and UPPERCASE
+analyzer.keywords = set(['CS', 'FIX']) # this must be a python set, and UPPERCASE
 df = analyzer.keyword_table()
 ...
 ```
 The same result though can be obtained by sticking with the default
 set of keywords and filtering the resulting dataframe, using
 ```python
-df[(df['keyword'] == 'BEGIN') | (df['keyword'] == 'END')]
+df[(df['keyword'] == 'CS') | (df['keyword'] == 'FIX')]
 ```
 or more succinctly
 ```python
-df[(df.keyword == 'BEGIN') | (df.keyword == 'END')]
+df[(df.keyword == 'CS') | (df.keyword == 'FIX')]
 ```
 In addition to the keywords, the `Analyzer` object has properties
 `keyword_char` and `comment_char` which are initialised to `*` and `;`
 respectively, but can be changed before calling `keyword_table`.
 
-More details of the constructor and function calls, can be found
+More details of the constructor and function calls can be found
 inside the script itself.
 
 ### Technical notes
@@ -202,13 +212,13 @@ example `*BEGIN` and `*Begin` are equally valid as `*begin`.  Also,
 there can be space between the keyword character and the keyword
 itself so that `* begin` is the same as `*begin`.  Again the code
 should handle these cases transparently.  By default, the entries in
-the keyword field of the dataframe are converted to upper case to
+the keyword column of the dataframe are converted to upper case to
 facilitate further processing, but the case can be preserved if
-requested (`preserve_case=True`).  The keyword character (by
-default `*`) is not included for the entries in this field.
+required (see code).  The keyword character (by default `*`) is not
+included for the entries in this column.
 
 Generally if a survex file can be successfully processed by `cavern`,
-then it ought to be parsable by the present scripts.  The code has
+then it ought to be parsable by the present script.  It has
 been checked against the Leck-Masongill data set and the
 EaseGill-Pippikin data set, as well as the Dow-Prov case.
 
