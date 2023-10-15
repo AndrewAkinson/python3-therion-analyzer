@@ -6,7 +6,7 @@ v1.0 - initial working version
 
 ### Summary
 
-The python script `svx_analyze.py` in this repository analyzes survex
+The python script `svx_keywords.py` in this repository analyzes survex
 data source file trees (`.svx` files).  It can be used to search for
 keywords such as file includes, begin and end statements, station fixes, entrance
 tags, co-ordinate system declarations, and others as desired.  A
