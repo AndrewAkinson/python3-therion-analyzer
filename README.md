@@ -8,8 +8,8 @@ v1.0 - initial working version
 
 The python script `svx_keywords.py` in this repository analyzes survex
 data source file trees (`.svx` files).  It can be used to search for
-keywords such as file `INCLUDE`s, `BEGIN` and `END` statements,
-station `FIX`es, `ENTRANCE` tags, co-ordinate system (`CS`)
+keywords such as file `INCLUDE` statements, `BEGIN` and `END` statements,
+`ENTRANCE` tags, `FIX` points, co-ordinate system (`CS`)
 declarations, and others as desired.  A 'grep-like' regular expression
 pattern matching mode is also available.
 
