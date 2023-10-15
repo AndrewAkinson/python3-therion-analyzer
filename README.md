@@ -14,12 +14,12 @@ declarations, and others as desired.  A 'grep-like' regular expression
 pattern matching mode is also available.
 
 The key feature that distinguishes this bespoke utility from generic
-file system tools such as `find` and `grep` is that the code parses
-the survex source file _tree_, following the file inclusion
-statements, thus treating the survey data sett _holistically_ rather
-than as a collection of `.svx` files.  It reports results in logical
-order, and additionally keeps track of the survex station naming
-hierarchy of begin/end statements.
+file system tools such as `find` and `grep` is that the code searches
+through the whole survex source file _tree_, following the file
+inclusion statements, thus treating the survey data _holistically_
+rather than as an _ad hoc_ collection of `.svx` files.  It reports results in
+logical order, and additionally keeps track of the survex station
+naming hierarchy of begin/end statements.
 
 For example, to extract fixed points and co-ordinate system
 definitions for the Dow-Prov system from the sample survex data source
