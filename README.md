@@ -72,8 +72,8 @@ options:
   -e, --excluded-keywords    a set of keywords to exclude from the default
   -t, --totals               print totals for each keyword
   -s, --summarize            print a one-line summary
-  -g GREP, --grep GREP       pattern to match (grep mode)
-  -i, --ignore-case          ignore case (grep mode)
+  -g, --grep                 pattern to match (switch to grep mode)
+  -i, --ignore-case          ignore case (when in grep mode)
   -p, --paths                include survex path when printing to terminal
   -c, --color                colorize printed results
   -q, --quiet                only print warnings and errors (in case of -o only)
