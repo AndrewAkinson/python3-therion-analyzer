@@ -26,7 +26,7 @@ along with this program.  If not, see
 
 """
 
-import re
+import re, sys
 import pandas as pd
 from pathlib import Path
 
@@ -97,7 +97,7 @@ class Analyzer:
     # stack are tuples of file information.  The initial entry (None,
     # None, ...) acts as a sentinel to stop the iteration.
 
-    def keyword_table(self, trace=False, directory_paths=False, preserve_case=False):
+    def keyword_table(self, trace=False, warn=False, directory_paths=False, preserve_case=False):
         '''Return a table of keywords in the survex tree, as a pandas dataframe'''
         keywords = self.keywords.copy() # make a copy, to modify as next
         keywords = keywords.union(set(['INCLUDE', 'BEGIN', 'END'])) # these should always be there
@@ -128,18 +128,20 @@ class Analyzer:
                             begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
                             svx_path.append(begin_path) # add to the list of survey path elements
                             begin_line_number, begin_line = line_number, line # keep a copy for debugging purposes
-                        else: # warn of empty BEGIN statement
-                            print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
+                        else:
+                            if warn: # warn of empty BEGIN statement
+                                print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
                     if uc_keyword == 'END': # process an END statement
                         if arguments:
                             end_path = arguments[0].lower() # again lower case
                             begin_path = svx_path.pop() # remove the most recent survey path element
-                            if end_path != begin_path: # issue a warning if it is not actually the same
+                            if warn and (end_path != begin_path): # issue a warning if it is not actually the same
                                 print('WARNING: mismatched BEGIN and END statements:')
                                 print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
                                 print(f'END statement line {line_number} in {p}: {line}')
-                        else: # warn of empty END statement
-                            print(f'WARNING: empty END statement at line {line_number} in {p}')
+                        else:
+                            if warn: # warn of empty END statement
+                                print(f'WARNING: empty END statement at line {line_number} in {p}')
                     if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                         stack.append((p, fp, line_number, encoding)) # push the path, pointer, line number and encoding onto stack
                         filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
@@ -224,17 +226,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
     parser.add_argument('svx_file', help='top level survex file (.svx)')
     parser.add_argument('-v', '--verbose', action='store_true', help='be verbose about which files are visited')
+    parser.add_argument('-w', '--warn', action='store_true', help='warn about oddities such as empty begin/end statements')
     parser.add_argument('-d', '--directories', action='store_true', help='record absolute directories instead of relative ones')
     parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
     parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
     parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
     parser.add_argument('-t', '--totals', action='store_true', help='print totals for each keyword')
     parser.add_argument('-s', '--summarize', action='store_true', help='print a one-line summary')
-    parser.add_argument('-q', '--quiet', action='store_true', help='only print warnings and errors (in case of -o only)')
     parser.add_argument('-g', '--grep', default=None, help='pattern to match (grep mode)')
     parser.add_argument('-i', '--ignore-case', action='store_true', help='ignore case (grep mode)')
-    parser.add_argument('-p', '--paths', action='store_true', help='include survex path in output')
+    parser.add_argument('-p', '--paths', action='store_true', help='include survex path when printing to terminal')
     parser.add_argument('-c', '--color', action='store_true', help='colorize printed results')
+    parser.add_argument('-q', '--quiet', action='store_true', help='only print warnings and errors (in case of -o only)')
     parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
     args = parser.parse_args()
 
@@ -267,7 +270,8 @@ if __name__ == "__main__":
 
     preserve_case = (not args.output) and (not args.summarize) and (not args.totals)
 
-    df = analyzer.keyword_table(trace=args.verbose, directory_paths=args.directories, preserve_case=preserve_case)
+    df = analyzer.keyword_table(trace=args.verbose, warn=args.warn,
+                                directory_paths=args.directories, preserve_case=preserve_case)
 
     # The convoluted logic here hopefully does the expected thing if
     # the user selects multiple options.  In particular one can use -t
@@ -291,3 +295,5 @@ if __name__ == "__main__":
     else:
         if not args.quiet and not args.grep:
             print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))
+        if args.grep:
+            sys.exit(1) # reproduce what grep returns if there are no matches

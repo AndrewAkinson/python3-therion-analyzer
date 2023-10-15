@@ -6,22 +6,22 @@ v1.0 - initial working version
 
 ### Summary
 
-This repository contains python code to analyze survex data source
-file trees (`.svx` files):
+The python script `svx_analyze.py` in this repository analyzes survex
+data source file trees (`.svx` files).  It can be used to search for
+keywords such as file includes, begin and end statements, station fixes, entrance
+tags, co-ordinate system declarations, and others as desired.  A
+'grep-like' regular expression pattern matching mode is also
+available.
 
-* `svx_keywords.py` extracts selected keywords and associated data;
-* `svx_grep.py` is a generic search tool along the lines of the unix `grep` utility.
-
-Both parse the source file and follow file inclusion statements.  For
-the first, extracted keywords can include begin and end statements,
-station fixes, entrance tags, co-ordinate system declarations, and
-others as desired. 
-
-A survex data source file tree for the Dow-Prov system is given in the
-`DowProv` directory.
+The key feature that distinguishes this bespoke utility from generic file
+system tools such as `find` and `grep` is that the code parses the
+survex source file and follows the file inclusion statements,
+reporting results in logical order, and additionally keeping track of
+the survex station naming hierarchy of begin/end statements.
 
 For example, to extract fixed points and co-ordinate system
-definitions use
+definitions for the Dow-Prov system from the sample survex data source
+file tree given in the `DowProv` directory, use
 ```
 $ ./svx_keywords.py DowProv/DowProv -c -k cs,fix
 DowProv/DowProv.svx:41:*cs OSGB:SD
@@ -34,31 +34,28 @@ On a terminal screen, this output would be colorized (`-c` option).
 
 ### Installation
 
-* Either clone or download the repository, or just download the two
-key python scripts `svx_keywords.py` and `svx_grep.py`;
+* Either clone or download the repository, or just download the 
+key python script `svx_keywords.py`;
 
-* Put these somewhere where they can be found, for instance in the top
-level working directory for a survey project.
+* put this script somewhere where it can be found,
+for instance in the top level working directory for a survey project.
 
 ### Usage
 
-#### As command line tools
+#### As a command line tool
 
-Used as a command line tool, `svx_keywords.py` provides a convenient
+For keyword selection, `svx_keywords.py` provides a convenient
 interface to the underlying functionality which is based around
-building a pandas dataframe containing the requested information.  For
-example, to save this dataframe as a spreadsheet for the Dow-Prov case, use
-```bash
-./svx_keywords.py DowProv/DowProv -o dp.ods
-```
-The resulting spreadsheet, here in open document format (`.ods`), can be
-loaded into Excel or libreoffice.
+building a pandas dataframe containing the requested information.
+Alternatively, one can search for a generic regular expression similar
+to the unix `grep` command line tool.
 
 The full usage is
 
 ```
-usage: svx_keywords.py [-h] [-v] [-d] [-k KEYWORDS] [-a KEYWORDS]
-            [-e KEYWORDS] [-t] [-s] [-q] [-p] [-c] [-o OUTPUT] svx_file
+usage: svx_keywords.py [-h] [-v] [-w] [-d] [-k KEYWORDS] [-a KEYWORDS]
+            [-e KEYWORDS] [-t] [-s] [-g GREP]
+	    [-i] [-p] [-c] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
@@ -68,40 +65,34 @@ positional arguments:
 options:
   -h, --help                 show this help message and exit
   -v, --verbose              be verbose about which files are visited
+  -w, --warn                 warn about oddities such as empty begin/end statements
   -d, --directories          record absolute directories instead of relative ones
   -k, --keywords             a set of keywords to use instead of default
   -a, --additional-keywords  a set of keywords to add to the default
   -e, --excluded-keywords    a set of keywords to exclude from the default
   -t, --totals               print totals for each keyword
   -s, --summarize            print a one-line summary
-  -q, --quiet                only print warnings and errors (in case of -o only)
-  -p, --paths                include survex path when in output
+  -g GREP, --grep GREP       pattern to match (grep mode)
+  -i, --ignore-case          ignore case (grep mode)
+  -p, --paths                include survex path when printing to terminal
   -c, --color                colorize printed results
+  -q, --quiet                only print warnings and errors (in case of -o only)
   -o, --output               (optional) output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
 in the initial example.
 
-The sets of keywords should be comma-separated, with no additional
-spaces.  Keywords are case-insensitive at this point, so that `-k
-begin,end` is the same as `-k BEGIN,END`, and so on.  The `-a` and
-`-e` options work similarly, but modify the default keyword set rather
-than replacing it.  Thus to omit all the `EQUATE` commands from the
-default set, for example, use `-e EQUATE` or `-e equate`, and so on.
-If keywords are not explicitly specified, the default is to report
-details for the following set: `INCLUDE`, `BEGIN`, `END`, `FIX`,
-`ENTRANCE`, `EQUATE`, and `CS` (which includes `CS OUT`).
+The default action is to search and report all results for keywords
+from the following set: `INCLUDE`, `BEGIN`, `END`, `FIX`, `ENTRANCE`,
+`EQUATE`, and `CS` (which includes `CS OUT`).
 
-If `-o` is not specified the command writes the extracted information
-as a list of file names and line numbers with the associated lines to
-terminal output.  With the `-p` option, additional survey path
-information is included.  If additionally `-c` option is present, this
-output is colorized like `grep -n` with the path information (if
-present) and keywords additionally highlighted.
-
-Summary information can be obtained with the `-t` and `-s` options.
-These can be combined with each other, and with `-o` (which always prints
-a summary unless `-q` is specified), and colorized by `-c`.
+The keyword set can be modified by using the `-k`, `-a` and `-e`
+options as follows.  The `-k` option is used to specify an alternative
+set of keywords to search for.  The argument should be a
+comma-separated list of keywords (case insensitive) with no
+additional spaces, for example `-k cs,fix` used in the introductory
+example.  The `-a` and `-e` options work similarly, but _modify_ the
+default keyword set rather than replacing it.
 
 With the `-o` option, the internal pandas dataframe is saved to a
 spreadsheet.  The top row is a header row, then there is one row for
@@ -116,29 +107,53 @@ parsing the sources.  The columns are
 * the current survex path;
 * the full original line in the survex file.
 
-The second script `svx_grep.py` reproduces some of the functionality
-of the unix `grep` utility in pattern-matching lines in survex source
-files.  It differs from regular `grep` because it strictly follows the
-include hierarchy, and because it additionally tracks begin and end
-statements.  The usage is TO BE COMPLETED...
+For example, to save this dataframe as a spreadsheet for the Dow-Prov
+case, use
+```bash
+./svx_keywords.py DowProv/DowProv -o dp.ods
+```
+The resulting spreadsheet, here in open document format (`.ods`), can be
+loaded into Excel or libreoffice.
+
+If `-o` is not specified the command writes the extracted information
+as a list of file names and line numbers, with the associated lines,
+to terminal output.  With the `-p` option, additional survey path
+information is included.  Summary information can be obtained with the
+`-t` and `-s` options.  These can be combined with each other (and
+also with `-o`, which always prints a summary unless `-q` is
+specified).  If the `-c` option is present for any of these, the
+terminal output is colorized like `grep -n`, with the path information
+(if present) and keywords additionally highlighted.
+
+The special 'grep' mode is accessed by specifying `-g`, with a regular
+expression, or just a simple string.  In this case, the set of
+keywords is ignored, as are the `-s`, `-t` and `-o` options, and all
+lines which contain a match are reported to the terminal window, with
+the match highlighted. Setting `-i` ignores case in the pattern
+matching.  The output is very similar to the standard `grep -n`
+alluded to above, with the exception that path information can be
+additionally included (`-p` option).  Also, unlike for keywords, if
+there are no pattern matches in 'grep' mode, the script returns with
+exit code 1 but no lines of output (modeled on the behavior of `grep`
+itself).
 
 #### In a python script or jupyter notebook
 
 The script `svx_keywords.py` can also be loaded as a python module in
-a python script or jupyter notebook.  The basic usage is
+a python script or jupyter notebook, and run from there to give
+direct access to the underlying pandas dataframe which is used to
+create the spreadsheet with the `-o` option.  The basic usage is
+
 ```python
 from svx_keywords import Analyzer
 ...
 df = Analyzer('DowProv/DowProv').keyword_table()
 ...
 ```
-The returned pandas dataframe `df` is stuctured the same way as the
-spreadsheet (in fact, it is exported as such in the command line
-version).
-
-Here, finer control can be achieved by modifying the `keywords`
-property of the instantiated object before running the analysis.  For
-example to look for just `BEGIN` and `END` statements use
+This employs the default set of keywords listed above, but fine
+control can be achieved by modifying the `keywords` property of the
+instantiated object before running the analysis.  For example to look
+for just `BEGIN` and `END` statements use
 ```python
 from svx_keywords import Analyzer
 ...
@@ -160,18 +175,8 @@ In addition to the keywords, the `Analyzer` object has properties
 `keyword_char` and `comment_char` which are initialised to `*` and `;`
 respectively, but can be changed before calling `keyword_table`.
 
-The function `keyword_table` has some additional boolean flags as
-parameters: `trace=True` makes the function call be verbose about
-which files it is visiting; `directory_paths=True` reports absolute
-directory paths in the table rather than file names relative to the
-directory containing the top level survex file; and
-`preserve_case=True` reports the actual keywords rather than the
-capitalised ones.
-
-Normally one would use `preserve_case=False` (the default) since it
-means that the entries in the keyword column of the dataframe are
-capitalised and so can be processed without worrying about case
-sensitivity.
+More details of the constructor and function calls, can be found
+inside the script itself.
 
 ### Technical notes
 
