@@ -2,7 +2,7 @@
 
 _Current version:_
 
-v1.1 - (current) reworked internals
+v1.1 - (current) reworked internals  
 v1.0 - initial working version
 
 ### Summary
