@@ -196,13 +196,14 @@ if __name__ == "__main__":
                     no_matches = False
                     match = match.group()
                     record_text = record.text.expandtabs()
+                    record_path = str(record.path.absolute()) if args.directories else str(record.path)
                     if args.color:
                         context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
-                        line = f'{PURPLE}{record.path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
+                        line = f'{PURPLE}{record_path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                         line = line.replace(match, f'{RED}{match}{NC}')
                     else:
                         context = record.context if args.context else ''
-                        line = f'{record.path}:{record.line}:{record.context}:{record_text}'
+                        line = f'{record_path}:{record.line}:{record.context}:{record_text}'
                     print(line)
         if no_matches:
             sys.exit(1) # reproduce what grep returns if there are no matches
@@ -231,24 +232,24 @@ if __name__ == "__main__":
                 keyword, uc_keyword, arguments = extract_keyword_arguments(clean, keywords, keyword_char) # preserving case
                 if keyword:
                     record_text = record.text.expandtabs()
-                    filename = str(record.path.absolute()) if args.directories else str(record.path)
+                    record_path = str(record.path.absolute()) if args.directories else str(record.path)
                     if args.output:
                         arguments = ' '.join(arguments)
                         keyword = keyword if args.no_ignore_case else uc_keyword
-                        records.append((filename, record.encoding, record.line, record.context,
+                        records.append((record_path, record.encoding, record.line, record.context,
                                         keyword, arguments, record_text))
                     if args.totals or args.summarize or args.output:
                         count[uc_keyword] = count[uc_keyword] + 1
                     else:
                         if args.color:
                             context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
-                            line = f'{PURPLE}{filename}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
+                            line = f'{PURPLE}{record_path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                             line = line.replace(keyword, f'{RED}{keyword}{NC}', 1)
                             line = line.replace(keyword_char, f'{RED}{keyword_char}{NC}', 1)
                             line = line.replace(f'{NC}{RED}', f'{RED}') # simplify
                         else:
                             context = record.context if args.context else ''
-                            line = f'{filename}:{record.line}:{record.context}:{record_text}'
+                            line = f'{record_path}:{record.line}:{record.context}:{record_text}'
                         print(line)
 
         top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
