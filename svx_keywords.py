@@ -54,7 +54,7 @@ def svx_open(p, trace):
         encoding = svx_encoding(p)
         fp = p.open('r', encoding=encoding)
         if trace:
-            print(f'Entering {p} ({encoding.upper()})')
+            print(f'Visiting {p} ({encoding.upper()})')
         line_number = 0
         return fp, line_number, encoding
 
@@ -255,22 +255,23 @@ if __name__ == "__main__":
                         print(line)
 
         top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
+        files_visited = f'{svx_reader.files_visited} files visited'
 
         if args.totals:
             for keyword in count:
                 if args.color:
-                    summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found ({svx_reader.files_visited} files)'
+                    summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found ({files_visited})'
                 else:
-                    summary = f'{top_level}:{keyword}: {count[keyword]} records found ({svx_reader.files_visited} files)'
+                    summary = f'{top_level}:{keyword}: {count[keyword]} records found ({files_visited})'
                 print(summary)
 
         if args.summarize or (args.output and not args.quiet):
             keyword_list = '|'.join(sorted(keywords))
             tot_count = sum(count.values())
             if args.color:
-                summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found ({svx_reader.files_visited} files)'
+                summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found ({files_visited})'
             else:
-                summary = f'{top_level}:{keyword_list}: {tot_count} records found ({svx_reader.files_visited} files)'
+                summary = f'{top_level}:{keyword_list}: {tot_count} records found ({files_visited})'
             print(summary)
 
         if args.output:
