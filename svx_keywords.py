@@ -243,8 +243,8 @@ if __name__ == "__main__":
                         if args.color:
                             context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
                             line = f'{PURPLE}{filename}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
-                            line = line.replace(keyword, f'{RED}{keyword}{NC}')
-                            line = line.replace(keyword_char, f'{RED}{keyword_char}')
+                            line = line.replace(keyword, f'{RED}{keyword}{NC}', 1)
+                            line = line.replace(keyword_char, f'{RED}{keyword_char}{NC}', 1)
                             line = line.replace(f'{NC}{RED}', f'{RED}') # simplify
                         else:
                             context = record.context if args.context else ''
