@@ -19,8 +19,8 @@ file system tools such as `find` and `grep` is that the code searches
 through the whole survex source file _tree_, following the file
 inclusion statements, thus treating the survey data _holistically_
 rather than as an _ad hoc_ collection of `.svx` files.  It reports results in
-logical order, and additionally keeps track of the survex station
-naming hierarchy of begin/end statements.
+logical order, and additionally keeps track of the survex 'context' (station
+naming hierarchy in terms of begin/end statements).
 
 For example, to extract fixed points and co-ordinate system
 definitions for the Dow-Prov system from the sample survex data source
