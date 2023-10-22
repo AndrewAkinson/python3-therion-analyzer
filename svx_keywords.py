@@ -77,7 +77,7 @@ def extract_keyword_arguments(clean, keywords, keyword_char):
         keyword, arguments = '', [] # the default position
     return keyword, keyword.upper(), arguments
 
-# Use this for storing results line per line basis
+# Use this for storing results on a line per line basis.
 
 class SvxRecord:
 
@@ -88,12 +88,11 @@ class SvxRecord:
         self.context = '.'.join(context)
         self.text = line
 
-# An iterator for iterating over files that can be called in context
+# An iterator for iterating over files that can be called in context.
 # Returns successive lines from the svx source tree, keeping track of
 # begin and end statements.  A stack is used to keep track of the
 # include files - items on the stack are tuples of file information.
-# The initial entry (None, None, ...) acts as a sentinel to stop the
-# iteration.
+# The initial stack entry acts as a sentinel to stop the iteration.
 
 class SvxReader:
     
@@ -102,11 +101,11 @@ class SvxReader:
         self.keyword_char = keyword_char;
         self.comment_char = comment_char;
         self.p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
+        self.top_level = self.p
         self.trace = trace
-        self.context = []
+        self.context = [] # keep this as a list
         self.keywords = set(['INCLUDE', 'BEGIN', 'END'])
         self.stack = [(None, None, 0, '')] # initialise file stack with a sentinel
-        self.line_number = 0
         self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
         self.files_visited = 1
 
@@ -253,8 +252,9 @@ if __name__ == "__main__":
                             line = f'{filename}:{record.line}:{record.context}:{text}'
                         print(line)
 
+        top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
+
         if args.totals:
-            top_level = Path(args.svx_file).with_suffix('.svx')
             for keyword in count:
                 if args.color:
                     summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found ({svx_reader.files_visited} files)'
@@ -264,7 +264,6 @@ if __name__ == "__main__":
 
         if args.summarize or (args.output and not args.quiet):
             keyword_list = '|'.join(sorted(keywords))
-            top_level = Path(args.svx_file).with_suffix('.svx')
             tot_count = sum(count.values())
             if args.color:
                 summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found ({svx_reader.files_visited} files)'
