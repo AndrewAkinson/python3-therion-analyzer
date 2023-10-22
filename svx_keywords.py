@@ -85,7 +85,7 @@ class SvxRecord:
         self.path = p
         self.encoding = encoding.upper()
         self.line = line_number
-        self.context = '.'.join(context)
+        self.context = context
         self.text = line
 
 # An iterator for iterating over files that can be called in context.
@@ -197,13 +197,14 @@ if __name__ == "__main__":
                     match = match.group()
                     record_text = record.text.expandtabs()
                     record_path = str(record.path.absolute()) if args.directories else str(record.path)
+                    record_context = '.'.join(record.context)
                     if args.color:
-                        context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
+                        context = f'{BLUE}{record_context}{CYAN}' if args.context else ''
                         line = f'{PURPLE}{record_path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                         line = line.replace(match, f'{RED}{match}{NC}')
                     else:
-                        context = record.context if args.context else ''
-                        line = f'{record_path}:{record.line}:{record.context}:{record_text}'
+                        context = record_context if args.context else ''
+                        line = f'{record_path}:{record.line}:{context}:{record_text}'
                     print(line)
         if no_matches:
             sys.exit(1) # reproduce what grep returns if there are no matches
@@ -233,23 +234,24 @@ if __name__ == "__main__":
                 if keyword:
                     record_text = record.text.expandtabs()
                     record_path = str(record.path.absolute()) if args.directories else str(record.path)
+                    record_context = '.'.join(record.context)
                     if args.output:
                         arguments = ' '.join(arguments)
                         keyword = keyword if args.no_ignore_case else uc_keyword
-                        records.append((record_path, record.encoding, record.line, record.context,
+                        records.append((record_path, record.encoding, record.line, record_context,
                                         keyword, arguments, record_text))
                     if args.totals or args.summarize or args.output:
                         count[uc_keyword] = count[uc_keyword] + 1
                     else:
                         if args.color:
-                            context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
+                            context = f'{BLUE}{record_context}{CYAN}' if args.context else ''
                             line = f'{PURPLE}{record_path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                             line = line.replace(keyword, f'{RED}{keyword}{NC}', 1)
                             line = line.replace(keyword_char, f'{RED}{keyword_char}{NC}', 1)
                             line = line.replace(f'{NC}{RED}', f'{RED}') # simplify
                         else:
-                            context = record.context if args.context else ''
-                            line = f'{record_path}:{record.line}:{record.context}:{record_text}'
+                            context = record_context if args.context else ''
+                            line = f'{record_path}:{record.line}:{context}:{record_text}'
                         print(line)
 
         top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
