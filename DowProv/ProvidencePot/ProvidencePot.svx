@@ -3,15 +3,13 @@
 ; created 27/10/2015 by Patrick Warren (PBW) from an original by Steve Warren
 
 *begin ProvidencePot
-*export entrance
 *export ppot6.15
 
 ; entrance at SD 99213 72887, alitude 401m ODN (from OS Terrain 50 dataset).
 ; OS Terrain 50 dataset Crown copyright and database right (2014).
 
-*entrance entrance
-*fix entrance 99213 72887 401
-*equate entrance ppot1.1
+*entrance ppot1.1
+*fix ppot1.1 99213 72887 401
 
 *include ppot1 ; 060205	Dec 3 37
 *include ppot2 ; 090405	Dec 3 36

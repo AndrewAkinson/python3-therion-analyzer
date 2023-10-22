@@ -48,12 +48,15 @@ def svx_encoding(p):
 
 def svx_open(p, trace):
     '''open a survex file and reset line counter'''
-    encoding = svx_encoding(p)
-    fp = p.open('r', encoding=encoding)
-    if trace:
-        print(f'Entering {p} ({encoding})')
-    line_number = 0
-    return fp, line_number, encoding
+    if not p.exists():
+        raise FileNotFoundError(p)
+    else:
+        encoding = svx_encoding(p)
+        fp = p.open('r', encoding=encoding)
+        if trace:
+            print(f'Entering {p} ({encoding.upper()})')
+        line_number = 0
+        return fp, line_number, encoding
 
 def svx_readline(fp, line_number):
     '''read a line from the survex file and increment line counter'''
@@ -69,91 +72,82 @@ def extract_keyword_arguments(clean, keywords, keyword_char):
                 arguments = clean_list[1:] # the rest is the argument
                 break # break out of for loop at this point
         else: # terminal clause in for loop
-            keyword, arguments = None, [] # the default position
+            keyword, arguments = '', [] # the default position
     else: # line did not start with the keyword character
-        keyword, arguments = None, [] # the default position
-    return keyword, arguments
+        keyword, arguments = '', [] # the default position
+    return keyword, keyword.upper(), arguments
 
-class Analyzer:
+# Use this for storing results line per line basis
 
-    # The idea is that we may wish to trim or augment the possible
-    # keywords being tracked.  The schema is used to set the column
-    # titles and data types in the dataframe.  If it is changed,
-    # matching changes should be made to the 'record =' line below.
+class SvxRecord:
+
+    def __init__(self, p, encoding, line_number, context, line):
+        self.path = p
+        self.encoding = encoding.upper()
+        self.line = line_number
+        self.context = '.'.join(context)
+        self.text = line
+
+# An iterator for iterating over files that can be called in context
+# Returns successive lines from the svx source tree, keeping track of
+# begin and end statements.  A stack is used to keep track of the
+# include files - items on the stack are tuples of file information.
+# The initial entry (None, None, ...) acts as a sentinel to stop the
+# iteration.
+
+class SvxReader:
     
-    def __init__(self, svx_file):
-        '''Instantiate with default properties, given a survex top level file'''
-        self.top_level = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
-        if not self.top_level.exists():
-            raise FileNotFoundError(self.top_level)
-        self.pattern = None # set in simple grep mode
-        self.keyword_char = '*'
-        self.comment_char = ';'
-        self.keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
-        self.schema = {'file':str, 'encoding':str, 'line':int, 'keyword':str,
-                       'argument':str, 'path':str, 'full':str}
+    def __init__(self, svx_file, trace=False, keyword_char='*', comment_char=';'):
+        '''Instantiate with default properties'''
+        self.keyword_char = keyword_char;
+        self.comment_char = comment_char;
+        self.p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
+        self.trace = trace
+        self.context = []
+        self.keywords = set(['INCLUDE', 'BEGIN', 'END'])
+        self.stack = [(None, None, 0, '')] # initialise file stack with a sentinel
+        self.line_number = 0
+        self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
 
-    # Use a stack to keep track of the include files - items on the
-    # stack are tuples of file information.  The initial entry (None,
-    # None, ...) acts as a sentinel to stop the iteration.
+    def __iter__(self):
+        '''Return an iterator for a top level svx file'''
+        return self
 
-    def keyword_table(self, trace=False, warn=False, directory_paths=False, preserve_case=False):
-        '''Return a table of keywords in the survex tree, as a pandas dataframe'''
-        keywords = self.keywords.copy() # make a copy, to modify as next
-        keywords = keywords.union(set(['INCLUDE', 'BEGIN', 'END'])) # these should always be there
-        stack = [(None, None, 0, '')] # initialise file stack with a sentinel
-        records = [] # this will accumulate the results record by record
-        svx_path = [] # will be a list of elements extracted from begin..end statements
-        p = self.top_level.absolute() if directory_paths else self.top_level # use absolute paths if requested
-        fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
-        while fp: # will finish when the sentinel is popped off stack
-            line, line_number = svx_readline(fp, line_number) # read line and increment the line number counter
-            while line: # loop until we run out of lines
+    def __next__(self):
+        '''Return the next line or stop iteration'''
+        if not self.fp:
+            raise StopIteration
+        else:
+            line, self.line_number = svx_readline(self.fp, self.line_number) # read line and increment the line number counter
+            if not line:
+                self.fp.close() # we ran out of lines for the file being currently processed
+                self.p, self.fp, self.line_number, self.encoding = self.stack.pop() # back to the including file
+                return next(self)
+            else:
                 line = line.strip() # remove leading and trailing whitespace then remove comments
-                if self.pattern: # simple grep mode
-                    match = self.pattern.search(line)
-                    if match: # add a result into the table of results
-                        record = (p, encoding.upper(), line_number, match.group(), '', '.'.join(svx_path), line.expandtabs()) # avoid tabs here (!!)
-                        records.append(record) # add to the growing accumulated data
                 clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
-                keyword, arguments = extract_keyword_arguments(clean, keywords, self.keyword_char) # preserving case
-                if keyword: # rejected if none found
-                    uc_keyword = keyword.upper() # upper case
-                    if uc_keyword in self.keywords: # for inclusion in the output, test against the *original* set of keywords
-                        record = (p, encoding.upper(), line_number, keyword if preserve_case else uc_keyword,
-                               ' '.join(arguments), '.'.join(svx_path), line.expandtabs()) # for sanity, avoid tabs here (!!)
-                        records.append(record) # add to the growing accumulated data
-                    if uc_keyword == 'BEGIN': # process a BEGIN statement
-                        if arguments:
-                            begin_path = arguments[0].lower() # lower case here (may be fixed in subsequent versions)
-                            svx_path.append(begin_path) # add to the list of survey path elements
-                            begin_line_number, begin_line = line_number, line # keep a copy for debugging purposes
-                        else:
-                            if warn: # warn of empty BEGIN statement
-                                print(f'WARNING: empty BEGIN statement at line {line_number} in {p}')
-                    if uc_keyword == 'END': # process an END statement
-                        if arguments:
-                            end_path = arguments[0].lower() # again lower case
-                            begin_path = svx_path.pop() # remove the most recent survey path element
-                            if warn and (end_path != begin_path): # issue a warning if it is not actually the same
-                                print('WARNING: mismatched BEGIN and END statements:')
-                                print(f'BEGIN statement line {begin_line_number} in {p}: {begin_line}')
-                                print(f'END statement line {line_number} in {p}: {line}')
-                        else:
-                            if warn: # warn of empty END statement
-                                print(f'WARNING: empty END statement at line {line_number} in {p}')
-                    if uc_keyword == 'INCLUDE': # process an INCLUDE statement
-                        stack.append((p, fp, line_number, encoding)) # push the path, pointer, line number and encoding onto stack
-                        filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
-                        p = Path(p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
-                        fp, line_number, encoding = svx_open(p, trace) # open the file and reset the line counter
-                line, line_number = svx_readline(fp, line_number) # read next line and increment the line number counter
-            fp.close() # we ran out of lines for the file being currently processed
-            p, fp, line_number, encoding = stack.pop() # back to the including file (this pop always returns, because of the sentinel)
+                keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
+                if uc_keyword == 'BEGIN' and arguments:
+                    self.context.append(arguments[0].lower()) # add the survex context (assume lower case)
+                if uc_keyword == 'END' and arguments:
+                    self.context.pop() # remove the most recent survex context
+                record = SvxRecord(self.p, self.encoding, self.line_number, self.context, line) # before push
+                if uc_keyword == 'INCLUDE': # process an INCLUDE statement
+                    self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
+                    filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
+                    self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
+                    self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
+                return record
 
-        return pd.DataFrame(records, columns=self.schema.keys()).astype(self.schema)
+    def __enter__(self):
+        return self
 
-    
+    def __exit__(self, type, value, traceback):
+        if type == FileNotFoundError:
+            p, fp, line_number, encoding = self.stack.pop() # back to the including file
+            print(f'FileNotFoundError: line {line_number} in {p}: {value}')
+            return True
+
 # The following are used in colorized strings below and draws on
 # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 
@@ -165,69 +159,17 @@ BLUE = '\033[0;34m'
 PURPLE = '\033[0;35m'
 CYAN = '\033[0;36m'
 
-# Note that colorization of keywords only works if the table has been
-# constructed using the 'preserve_case' attribute above.  In
-# colorizing the keywords, we first create a new column in the
-# dataframe 'cfull' which colorizes the keyword or match in the line.
-
-def stringify(df, color=False, paths=False, keyword_char='*', grep_mode=False):
-    '''Return a pandas series of strings given the keyword table'''
-    if color:
-        df['cfull'] = df.apply(lambda r: r.full.replace(r.keyword, f'{RED}{r.keyword}{NC}'), axis='columns')
-        if paths:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{BLUE}{r.path}{CYAN}:{NC}{r.cfull}', axis='columns')
-        else:
-            ser = df.apply(lambda r: f'{PURPLE}{r.file}{CYAN}:{GREEN}{r.line}{CYAN}:{NC}{r.cfull}', axis='columns')
-        if not grep_mode:
-            ser = ser.apply(lambda el: el.replace(f'{RED}', '')) # remove the color change in front of the keyword
-            ser = ser.apply(lambda el: el.replace(keyword_char, f'{RED}{keyword_char}')) # and reinsert before keyword character
-            ser = ser.apply(lambda el: el.replace(f'{NC}{RED}', f'{RED}')) # simplify
-        df.drop('cfull', axis='columns', inplace=True) # tidy up
-    else:
-        if paths:
-            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.path}:{r.full}', axis='columns')
-        else:
-            ser = df.apply(lambda r: f'{r.file}:{r.line}:{r.full}', axis='columns')
-    return ser
-
-# Here we use the pandas value_counts function to count numbers of
-# keywords.  This returns a series which is here converted to a
-# dataframe with appropriately named columns.
-
-def summarize(df, path, color=False):
-    '''Return a pandas series of strings for a summary of the keyword table'''
-    df_summary = df.keyword.value_counts().reset_index(name='total').rename(columns={'index': 'keyword'})
-    if color:
-        ser = df_summary.apply(lambda r: f'{PURPLE}{path}{CYAN}:{RED}{r.keyword}{CYAN}:{NC}{r.total}', axis='columns')
-    else:
-        ser = df_summary.apply(lambda r: f'{path}:{r.keyword}:{r.total}', axis=1)
-    return ser
-
-def summary(df, path, keywords, color=False, extra=None):
-    '''Return a string summarizing the results'''
-    keyword_list = '|'.join(sorted(keywords))
-    if color:
-        summary = f'{PURPLE}{path}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {len(df)} records found'
-    else:
-        summary = f'{path}:{keyword_list}: {len(df)} records found'
-    if extra:
-        if color:
-            summary = summary + f'{YELLOW}{extra}'
-        else:
-            summary = summary + extra
-    return summary
-
-# Wrapper code below here
-
 if __name__ == "__main__":
 
+    import re
     import argparse
+
+    keyword_char, comment_char = '*', ';' # for the time being
 
     parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
     parser.add_argument('svx_file', help='top level survex file (.svx)')
     parser.add_argument('-v', '--verbose', action='store_true', help='be verbose about which files are visited')
-    parser.add_argument('-w', '--warn', action='store_true', help='warn about oddities such as empty begin/end statements')
-    parser.add_argument('-d', '--directories', action='store_true', help='record absolute directories instead of relative ones')
+    parser.add_argument('-d', '--directories', action='store_true', help='absolute file paths instead of relative ones')
     parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
     parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
     parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
@@ -235,65 +177,105 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--summarize', action='store_true', help='print a one-line summary')
     parser.add_argument('-g', '--grep', default=None, help='pattern to match (switch to grep mode)')
     parser.add_argument('-i', '--ignore-case', action='store_true', help='ignore case (when in grep mode)')
-    parser.add_argument('-p', '--paths', action='store_true', help='include survex path when printing to terminal')
+    parser.add_argument('-n', '--no-ignore-case', action='store_true', help='preserve case (when in keyword mode)')
+    parser.add_argument('-x', '--context', action='store_true', help='include survex context in printed results')
     parser.add_argument('-c', '--color', action='store_true', help='colorize printed results')
-    parser.add_argument('-q', '--quiet', action='store_true', help='only print warnings and errors (in case of -o only)')
+    parser.add_argument('-q', '--quiet', action='store_true', help='only print errors (in case of -o only)')
     parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
     args = parser.parse_args()
-
-    # For the time being assume the comment character (;) and keyword
-    # character (*) are the defaults.  This can be fixed if it ever
-    # becomes an issue.
-
-    analyzer = Analyzer(args.svx_file) # create a new instance
 
     if args.grep: # simple grep mode
         
         flags = re.IGNORECASE if args.ignore_case else 0
-        analyzer.pattern = re.compile(args.grep, flags=flags)
-        analyzer.keywords = set() # an empty set
-        args.totals = args.summarize = False
-        args.oputput = None
+        pattern = re.compile(args.grep, flags=flags)
+        no_matches = True
+        with SvxReader(args.svx_file) as svx_reader:
+            for record in svx_reader:
+                match = pattern.search(record.text)
+                if match:
+                    no_matches = False
+                    match = match.group()
+                    text = record.text.expandtabs()
+                    if args.color:
+                        context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
+                        line = f'{PURPLE}{record.path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{text}'
+                        line = line.replace(match, f'{RED}{match}{NC}')
+                    else:
+                        context = record.context if args.context else ''
+                        line = f'{record.path}:{record.line}:{record.context}:{text}'
+                    print(line)
+        if no_matches:
+            sys.exit(1) # reproduce what grep returns if there are no matches
 
-    else:
+    else: # keyword matching mode
 
         if args.keywords:
-            analyzer.keywords = set(args.keywords.upper().split(','))
+            keywords = set(args.keywords.upper().split(','))
+        else:
+            keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
 
         if args.additional_keywords:
             to_be_added = set(args.additional_keywords.upper().split(','))
-            analyzer.keywords = analyzer.keywords.union(to_be_added)
+            keywords = keywords.union(to_be_added)
 
         if args.excluded_keywords:
             to_be_removed = set(args.excluded_keywords.upper().split(','))
-            analyzer.keywords = analyzer.keywords.difference(to_be_removed)
+            keywords = keywords.difference(to_be_removed)
 
-    preserve_case = (not args.output) and (not args.summarize) and (not args.totals)
+        count = dict.fromkeys(keywords, 0)
+        records = []
 
-    df = analyzer.keyword_table(trace=args.verbose, warn=args.warn,
-                                directory_paths=args.directories, preserve_case=preserve_case)
+        with SvxReader(args.svx_file, trace=args.verbose) as svx_reader:
+            for record in svx_reader:
+                clean = record.text.split(comment_char)[0].strip() if comment_char in record.text else record.text
+                keyword, uc_keyword, arguments = extract_keyword_arguments(clean, keywords, keyword_char) # preserving case
+                if keyword:
+                    text = record.text.expandtabs()
+                    filename = str(record.path.absolute()) if args.directories else str(record.path)
+                    if args.output:
+                        arguments = ' '.join(arguments)
+                        keyword = keyword if args.no_ignore_case else uc_keyword
+                        records.append((filename, record.encoding, record.line, record.context,
+                                        keyword, arguments, record.text))
+                    if args.totals or args.summarize or args.output:
+                        count[uc_keyword] = count[uc_keyword] + 1
+                    else:
+                        if args.color:
+                            context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
+                            line = f'{PURPLE}{filename}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{text}'
+                            line = line.replace(keyword, f'{RED}{keyword}{NC}')
+                            line = line.replace(keyword_char, f'{RED}{keyword_char}')
+                            line = line.replace(f'{NC}{RED}', f'{RED}') # simplify
+                        else:
+                            context = record.context if args.context else ''
+                            line = f'{filename}:{record.line}:{record.context}:{text}'
+                        print(line)
 
-    # The convoluted logic here hopefully does the expected thing if
-    # the user selects multiple options.  In particular one can use -t
-    # to report totals as well as -o to save to a spreadsheet.
+        if args.totals:
+            top_level = Path(args.svx_file).with_suffix('.svx')
+            for keyword in count:
+                if args.color:
+                    summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found'
+                else:
+                    summary = f'{top_level}:{keyword}: {count[keyword]} records found'
+                print(summary)
 
-    if len(df):
-        if args.totals or args.summarize:
-            if args.totals:
-                for el in summarize(df, analyzer.top_level, color=args.color):
-                    print(el)
-            if args.summarize and not args.output:
-                print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))
+        if args.summarize or (args.output and not args.quiet):
+            keyword_list = '|'.join(sorted(keywords))
+            top_level = Path(args.svx_file).with_suffix('.svx')
+            tot_count = sum(count.values())
+            if args.color:
+                summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found'
+            else:
+                summary = f'{top_level}:{keyword_list}: {tot_count} records found'
+            print(summary)
+
         if args.output:
+
+            import pandas as pd
+            schema = {'path':str, 'encoding':str, 'line':int, 'context':str,
+                      'keyword':str, 'argument':str, 'full':str}
+            df = pd.DataFrame(records, columns=schema.keys()).astype(schema)
             df.to_excel(args.output, index=False)
-            if not args.quiet or args.summarize:
-                print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color, extra=f' > {args.output}'))
-        else:
-            if not args.totals and not args.summarize:
-                for el in stringify(df, paths=args.paths, color=args.color, grep_mode=args.grep):
-                    print(el)
-    else:
-        if not args.quiet and not args.grep:
-            print(summary(df, analyzer.top_level, analyzer.keywords, color=args.color))
-        if args.grep:
-            sys.exit(1) # reproduce what grep returns if there are no matches
+            if not args.quiet:
+                print(f'Dataframe ({len(df.columns)} columns, {len(df)} rows) written to {args.output}')

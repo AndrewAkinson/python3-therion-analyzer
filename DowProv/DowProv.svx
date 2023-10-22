@@ -41,7 +41,8 @@
 *cs OSGB:SD
 *cs out EPSG:7405
 
-; *cs out EPSG:3042 ; WGS84 UTM zone 30N (includes zone 30U)
+; *cs out EPSG:3042 ; ETRS89 UTM zone 30N
+; *cs out UTM30N ; WGS84 UTM zone 30N
 
 ; Mag dec calculated for SD 97480 72608 alt 225m
 ; Dowbergill Bridge, just above Kettlewell

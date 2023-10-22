@@ -8,13 +8,11 @@
 ; benchmark at Park Rash (Bob Cross + Steve Warren, 1986).
 
 *begin DowCave
-*export entrance
 *export dow2.31
 *export dow2.35
 
-*entrance entrance
-*fix entrance 98378 74300 334
-*equate entrance dow1.1
+*entrance dow1.1
+*fix dow1.1 98378 74300 334
 
 *include dow1
 *include dow2
