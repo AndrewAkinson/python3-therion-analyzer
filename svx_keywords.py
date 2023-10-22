@@ -118,20 +118,20 @@ class SvxReader:
         if not self.fp:
             raise StopIteration
         else:
-            line, self.line_number = svx_readline(self.fp, self.line_number) # read line and increment the line number counter
-            if not line:
+            self.line, self.line_number = svx_readline(self.fp, self.line_number) # read line and increment the line number counter
+            if not self.line:
                 self.fp.close() # we ran out of lines for the file being currently processed
                 self.p, self.fp, self.line_number, self.encoding = self.stack.pop() # back to the including file
                 return next(self)
             else:
-                line = line.strip() # remove leading and trailing whitespace then remove comments
-                clean = line.split(self.comment_char)[0].strip() if self.comment_char in line else line
+                self.line = self.line.strip() # remove leading and trailing whitespace then remove comments
+                clean = self.line.split(self.comment_char)[0].strip() if self.comment_char in self.line else self.line
                 keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
                 if uc_keyword == 'BEGIN' and arguments:
                     self.context.append(arguments[0].lower()) # add the survex context (assume lower case)
                 if uc_keyword == 'END' and arguments:
                     self.context.pop() # remove the most recent survex context
-                record = SvxRecord(self.p, self.encoding, self.line_number, self.context, line) # before push
+                record = SvxRecord(self.p, self.encoding, self.line_number, self.context, self.line) # before push
                 if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                     self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
                     filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
@@ -146,8 +146,7 @@ class SvxReader:
     def __exit__(self, type, value, traceback):
         if type == FileNotFoundError:
             p, fp, line_number, encoding = self.stack.pop() # back to the including file
-            print(f'FileNotFoundError: line {line_number} in {p}: {value}')
-            return True
+            print(f'{p}:{line_number}: {self.line.expandtabs()}')
 
 if __name__ == "__main__":
 
@@ -196,14 +195,14 @@ if __name__ == "__main__":
                 if match:
                     no_matches = False
                     match = match.group()
-                    text = record.text.expandtabs()
+                    record_text = record.text.expandtabs()
                     if args.color:
                         context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
-                        line = f'{PURPLE}{record.path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{text}'
+                        line = f'{PURPLE}{record.path}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                         line = line.replace(match, f'{RED}{match}{NC}')
                     else:
                         context = record.context if args.context else ''
-                        line = f'{record.path}:{record.line}:{record.context}:{text}'
+                        line = f'{record.path}:{record.line}:{record.context}:{record_text}'
                     print(line)
         if no_matches:
             sys.exit(1) # reproduce what grep returns if there are no matches
@@ -231,25 +230,25 @@ if __name__ == "__main__":
                 clean = record.text.split(comment_char)[0].strip() if comment_char in record.text else record.text
                 keyword, uc_keyword, arguments = extract_keyword_arguments(clean, keywords, keyword_char) # preserving case
                 if keyword:
-                    text = record.text.expandtabs()
+                    record_text = record.text.expandtabs()
                     filename = str(record.path.absolute()) if args.directories else str(record.path)
                     if args.output:
                         arguments = ' '.join(arguments)
                         keyword = keyword if args.no_ignore_case else uc_keyword
                         records.append((filename, record.encoding, record.line, record.context,
-                                        keyword, arguments, record.text))
+                                        keyword, arguments, record_text))
                     if args.totals or args.summarize or args.output:
                         count[uc_keyword] = count[uc_keyword] + 1
                     else:
                         if args.color:
                             context = f'{BLUE}{record.context}{CYAN}' if args.context else ''
-                            line = f'{PURPLE}{filename}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{text}'
+                            line = f'{PURPLE}{filename}{CYAN}:{GREEN}{record.line}{CYAN}:{BLUE}{context}{CYAN}:{NC}{record_text}'
                             line = line.replace(keyword, f'{RED}{keyword}{NC}')
                             line = line.replace(keyword_char, f'{RED}{keyword_char}')
                             line = line.replace(f'{NC}{RED}', f'{RED}') # simplify
                         else:
                             context = record.context if args.context else ''
-                            line = f'{filename}:{record.line}:{record.context}:{text}'
+                            line = f'{filename}:{record.line}:{record.context}:{record_text}'
                         print(line)
 
         top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
