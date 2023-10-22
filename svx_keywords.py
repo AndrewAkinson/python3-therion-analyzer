@@ -108,6 +108,7 @@ class SvxReader:
         self.stack = [(None, None, 0, '')] # initialise file stack with a sentinel
         self.line_number = 0
         self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
+        self.files_visited = 1
 
     def __iter__(self):
         '''Return an iterator for a top level svx file'''
@@ -137,6 +138,7 @@ class SvxReader:
                     filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
                     self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
                     self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
+                    self.files_visited = self.files_visited + 1
                 return record
 
     def __enter__(self):
@@ -148,18 +150,18 @@ class SvxReader:
             print(f'FileNotFoundError: line {line_number} in {p}: {value}')
             return True
 
+if __name__ == "__main__":
+
 # The following are used in colorized strings below and draws on
 # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 
-NC = '\033[0m'
-RED = '\033[0;31m'
-GREEN = '\033[0;32m'
-YELLOW = '\033[0;33m'
-BLUE = '\033[0;34m'
-PURPLE = '\033[0;35m'
-CYAN = '\033[0;36m'
-
-if __name__ == "__main__":
+    NC = '\033[0m'
+    RED = '\033[0;31m'
+    GREEN = '\033[0;32m'
+    YELLOW = '\033[0;33m'
+    BLUE = '\033[0;34m'
+    PURPLE = '\033[0;35m'
+    CYAN = '\033[0;36m'
 
     import re
     import argparse
@@ -255,9 +257,9 @@ if __name__ == "__main__":
             top_level = Path(args.svx_file).with_suffix('.svx')
             for keyword in count:
                 if args.color:
-                    summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found'
+                    summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword}{CYAN}:{NC} {count[keyword]} records found ({svx_reader.files_visited} files)'
                 else:
-                    summary = f'{top_level}:{keyword}: {count[keyword]} records found'
+                    summary = f'{top_level}:{keyword}: {count[keyword]} records found ({svx_reader.files_visited} files)'
                 print(summary)
 
         if args.summarize or (args.output and not args.quiet):
@@ -265,9 +267,9 @@ if __name__ == "__main__":
             top_level = Path(args.svx_file).with_suffix('.svx')
             tot_count = sum(count.values())
             if args.color:
-                summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found'
+                summary = f'{PURPLE}{top_level}{CYAN}:{RED}{keyword_list}{CYAN}:{NC} {tot_count} records found ({svx_reader.files_visited} files)'
             else:
-                summary = f'{top_level}:{keyword_list}: {tot_count} records found'
+                summary = f'{top_level}:{keyword_list}: {tot_count} records found ({svx_reader.files_visited} files)'
             print(summary)
 
         if args.output:

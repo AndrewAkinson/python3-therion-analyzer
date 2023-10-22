@@ -2,6 +2,7 @@
 
 _Current version:_
 
+v1.1 - (current) reworked internals
 v1.0 - initial working version
 
 ### Summary
@@ -26,11 +27,11 @@ definitions for the Dow-Prov system from the sample survex data source
 file tree given in the `DowProv` directory, use
 ```
 $ ./svx_keywords.py DowProv/DowProv -c -k cs,fix
-DowProv/DowProv.svx:41:*cs OSGB:SD
-DowProv/DowProv.svx:42:*cs out EPSG:7405
-DowProv/DowCave/DowCave.svx:16:*fix entrance 98378 74300 334
-DowProv/ProvidencePot/ProvidencePot.svx:13:*fix entrance 99213 72887 401
-DowProv/HagDyke.svx:14:*fix W 98981 73327 459
+DowProv/DowProv.svx:41::*cs OSGB:SD
+DowProv/DowProv.svx:42::*cs out EPSG:7405
+DowProv/DowCave/DowCave.svx:16::*fix entrance 98378 74300 334
+DowProv/ProvidencePot/ProvidencePot.svx:13::*fix entrance 99213 72887 401
+DowProv/HagDyke.svx:14::*fix W 98981 73327 459
 ```
 On a terminal screen, this output would be colorized (`-c` option).
 
@@ -47,17 +48,16 @@ for instance in the top level working directory for a survey project.
 #### As a command line tool
 
 For keyword selection, `svx_keywords.py` provides a convenient
-interface to the underlying functionality which is based around
-building a pandas dataframe containing the requested information.
+interface to searching for active keywords in the survex file tree.
 Alternatively, one can search for a generic regular expression similar
 to the unix `grep` command line tool.
 
 The full usage is
 
 ```
-usage: svx_keywords.py [-h] [-v] [-w] [-d] [-k KEYWORDS] [-a KEYWORDS]
+usage: svx_keywords.py [-h] [-v] [-d] [-k KEYWORDS] [-a KEYWORDS]
             [-e KEYWORDS] [-t] [-s] [-g GREP]
-	    [-i] [-p] [-c] [-q] [-o OUTPUT] svx_file
+	    [-i] [-n] [-x] [-c] [-q] [-o OUTPUT] svx_file
 
 Analyze a survex data source tree.
 
@@ -67,8 +67,7 @@ positional arguments:
 options:
   -h, --help                 show this help message and exit
   -v, --verbose              be verbose about which files are visited
-  -w, --warn                 warn about oddities such as empty begin/end statements
-  -d, --directories          record absolute directories instead of relative ones
+  -d, --directories          absolute file paths instead of relative ones
   -k, --keywords             a set of keywords to use instead of default
   -a, --additional-keywords  a set of keywords to add to the default
   -e, --excluded-keywords    a set of keywords to exclude from the default
@@ -76,9 +75,10 @@ options:
   -s, --summarize            print a one-line summary
   -g, --grep                 pattern to match (switch to grep mode)
   -i, --ignore-case          ignore case (when in grep mode)
-  -p, --paths                include survex path when printing to terminal
+  -n, --no-ignore-case       preserve case (when in keyword mode)
+  -x, --context              include survex context in printed results
   -c, --color                colorize printed results
-  -q, --quiet                only print warnings and errors (in case of -o only)
+  -q, --quiet                only print errors (in case of -o only)
   -o, --output               (optional) output to spreadsheet (.ods, .xlsx)
 ```
 The file extension (`.svx`) is supplied automatically if missing, as
@@ -97,23 +97,22 @@ example.  The `-a` and `-e` options work similarly, but _modify_ the
 default keyword set rather than replacing it.
 
 Note that only _active_ keywords are found, not any that have been
-'commented out'.
+'commented out' (see 'grep' mode for this).
 
-With the `-o` option, the internal pandas dataframe is saved to a
-spreadsheet.  The top row is a header row, then there is one row for
-each keyword instance, in the order in which they appeared when
-parsing the sources.  The columns are
+With the `-o` option, the results are saved to a spreadsheet.  The top
+row is a header row, then there is one row for each keyword instance,
+in the order in which they appeared when parsing the sources.  The
+columns are
 
-* the file name;
+* the file path for the detected keyword;
 * the detected character encoding of the file (`UTF-8`, `ISO-8859-1`);
 * the line number in the file;
-* the actual keyword, capitalised (`INCLUDE`, `BEGIN`, `END`, etc);
+* the current survex context from begin statements;
+* the keyword itself, capitalized unless the `-n` option is chosen;
 * the argument(s) following the keyword, if any;
-* the current survex path;
 * the full original line in the survex file.
 
-For example, to save this dataframe as a spreadsheet for the Dow-Prov
-case, use
+For example, to save a spreadsheet for the Dow-Prov case, use
 ```bash
 ./svx_keywords.py DowProv/DowProv -o dp.ods
 ```
@@ -122,12 +121,12 @@ loaded into Excel or libreoffice.
 
 If `-o` is not specified the command writes the extracted information
 as a list of file names and line numbers, with the associated lines,
-to terminal output.  With the `-p` option, additional survey path
+to terminal output.  With the `-x` option, additional survex context
 information is included.  Summary information can be obtained with the
 `-t` and `-s` options.  These can be combined with each other (and
 also with `-o`, which always prints a summary unless `-q` is
 specified).  If the `-c` option is present for any of these, the
-terminal output is colorized like `grep -n`, with the path information
+terminal output is colorized like `grep`, with the path information
 (if present) and keywords additionally highlighted.
 
 The special 'grep' mode is accessed by specifying `-g`, with a regular
@@ -135,12 +134,12 @@ expression, or just a simple string.  In this case, the set of
 keywords is ignored, as are the `-s`, `-t` and `-o` options, and all
 lines which contain a match are reported to the terminal window, with
 the match highlighted. Setting `-i` ignores case in the pattern
-matching.  The output is very similar to the standard `grep -n`
-alluded to above, with the exception that path information can be
-additionally included (`-p` option).  Also, unlike for keywords, if
-there are no pattern matches in 'grep' mode, the script returns with
-exit code 1 but no lines of output (modeled on the behavior of `grep`
-itself).
+matching.  The output is very similar to the standard `grep` alluded
+to above, with the exception that line numbers are always included,
+and context can be additionally included with the `-x` option.  Also,
+if there are no pattern matches in 'grep' mode, the script returns
+with exit code 1 but no lines of output (modeled on the behavior of
+`grep` itself).
 
 The 'grep' mode can be used to search for _all_ instances of a
 keyword in the files, not just active ones that are reported by the
@@ -150,41 +149,34 @@ keywords have been 'commented out'.
 #### In a python script or jupyter notebook
 
 The script `svx_keywords.py` can also be loaded as a python module in
-a python script or jupyter notebook, and run from there to give
-direct access to the underlying pandas dataframe which is used to
-create the spreadsheet with the `-o` option.  The basic usage is
+a python script or jupyter notebook from which an iterator can be
+created as a context manager to iterate over all the lines in the
+files in the survex data tree, in order.  The basic usage is
+```python
+from svx_keywords import SvxReader
+
+with SvxReader('DowProv/DowProv') as svx_reader:
+    for record in svx_reader:
+    	# do something with the record ...
+```
+The returned 'record' has fields for:
+
+* `.path` = the file path as a `Path` object;
+* `.encoding` = the detected file encoding;
+* `.line` = line number (integer) in the file;
+* `.context` = survex context inferred from begin statements;
+* `.text` = the line itself
+
+For example, to print all entries which begin with `*fix` do
 
 ```python
-from svx_keywords import Analyzer
-...
-df = Analyzer('DowProv/DowProv').keyword_table()
-...
-```
-This employs the default set of keywords listed above, but fine
-control can be achieved by modifying the `keywords` property of the
-instantiated object before running the analysis.  For example to look
-for just `CS` and `FIX` statements as in the initial example use
-```python
-from svx_keywords import Analyzer
-...
-analyzer = Analyzer('DowProv/DowProv') # create a named instance
-analyzer.keywords = set(['CS', 'FIX']) # this must be a python set, and UPPERCASE
-df = analyzer.keyword_table()
-...
-```
-The same result though can be obtained by sticking with the default
-set of keywords and filtering the resulting dataframe, using
-```python
-df[(df['keyword'] == 'CS') | (df['keyword'] == 'FIX')]
-```
-or more succinctly
-```python
-df[(df.keyword == 'CS') | (df.keyword == 'FIX')]
-```
-In addition to the keywords, the `Analyzer` object has properties
-`keyword_char` and `comment_char` which are initialised to `*` and `;`
-respectively, but can be changed before calling `keyword_table`.
+from svx_keywords import SvxReader
 
+with SvxReader('DowProv/DowProv') as svx_reader:
+    for record in svx_reader:
+        if record.text.startswith('*fix'):
+            print(record.text)
+```
 More details of the constructor and function calls can be found
 inside the script itself.
 
@@ -211,11 +203,7 @@ forced to lower case.  For keywords, capitalisation is irrelevant, for
 example `*BEGIN` and `*Begin` are equally valid as `*begin`.  Also,
 there can be space between the keyword character and the keyword
 itself so that `* begin` is the same as `*begin`.  Again the code
-should handle these cases transparently.  By default, the entries in
-the keyword column of the dataframe are converted to upper case to
-facilitate further processing, but the case can be preserved if
-required (see code).  The keyword character (by default `*`) is not
-included for the entries in this column.
+should handle these cases transparently. 
 
 Generally if a survex file can be successfully processed by `cavern`,
 then it ought to be parsable by the present script.  It has
