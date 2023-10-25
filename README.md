@@ -16,8 +16,8 @@ pattern matching mode is also available.
 
 The key feature that distinguishes this bespoke utility from generic
 file system tools such as `find` and `grep` is that the code searches
-through the whole survex source file _tree_, following the file
-inclusion statements, thus treating the survey data _holistically_
+through the _whole_ survex source file tree, following the file
+inclusion statements, thus treating the survey data holistically
 rather than as an _ad hoc_ collection of `.svx` files.  It reports results in
 logical order, and additionally keeps track of the survex 'context' (station
 naming hierarchy in terms of begin/end statements).

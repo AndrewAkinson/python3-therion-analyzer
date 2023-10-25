@@ -27,7 +27,6 @@ along with this program.  If not, see
 """
 
 import re, sys
-import pandas as pd
 from pathlib import Path
 
 def svx_encoding(p):
@@ -127,10 +126,10 @@ class SvxReader:
                 self.line = self.line.strip() # remove leading and trailing whitespace then remove comments
                 clean = self.line.split(self.comment_char)[0].strip() if self.comment_char in self.line else self.line
                 keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
-                if uc_keyword == 'BEGIN' and arguments:
-                    self.context.append(arguments[0].lower()) # add the survex context (assume lower case)
-                if uc_keyword == 'END' and arguments:
-                    self.context.pop() # remove the most recent survex context
+                if uc_keyword == 'BEGIN' and arguments: # add the survex context (assume lower case)
+                    self.context.append(arguments[0].lower())
+                if uc_keyword == 'END' and arguments: # remove the most recent survex context
+                    self.context.pop()
                 record = SvxRecord(self.p, self.encoding, self.line_number, self.context, self.line) # before push
                 if uc_keyword == 'INCLUDE': # process an INCLUDE statement
                     self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
