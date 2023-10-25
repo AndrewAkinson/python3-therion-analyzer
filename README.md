@@ -164,7 +164,7 @@ The returned 'record' has fields for:
 * `.path` = the file path as a `Path` object;
 * `.encoding` = the detected file encoding;
 * `.line` = line number (integer) in the file;
-* `.context` = survex context inferred from begin statements;
+* `.context` = survex context inferred from begin statements, as a list;
 * `.text` = the line itself
 
 For example, to print all entries which begin with `*fix` do
