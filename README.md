@@ -67,7 +67,7 @@ positional arguments:
 
 options:
   -h, --help                 show this help message and exit
-  -t, --trace                trace (output) the files that are visited
+  -v, --verbose                trace (output) the files that are visited
   -d, --directories          absolute file paths instead of relative ones
   -k, --keywords             a set of keywords to use instead of default
   -a, --additional-keywords  a set of keywords to add to the default
