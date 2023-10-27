@@ -157,7 +157,7 @@ $ ./svx_keywords.py DowProv/DowProv -cv -k zzyzx
 DowProv/DowProv.svx:0::<entered>
 DowProv/DowCave/DowCave.svx:0::<entered>
 DowProv/DowCave/dow1.svx:0::<entered>
-<etc, ... for 49 files>
+... (49 files in total)
 ```
 
 #### In a python script or jupyter notebook
