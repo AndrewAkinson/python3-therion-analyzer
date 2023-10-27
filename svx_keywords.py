@@ -196,11 +196,12 @@ if __name__ == "__main__":
             '''hook for tracing which files are being visited'''
             path = str(p.absolute()) if args.directories else str(p)
             context = '.'.join(context) if args.context else ''
+            entered = '<entered>' # ensure consistency
             if args.color:
                 context = f'{BLUE}{context}{CYAN}' if context else ''
-                postscript = f'{PURPLE}{path}{CYAN}:{GREEN}0{CYAN}:{context}:{RED}<entered>{NC}'
+                postscript = f'{PURPLE}{path}{CYAN}:{GREEN}0{CYAN}:{context}:{RED}{entered}{NC}'
             else:
-                postscript = f'{path}:0:{context}:entered'
+                postscript = f'{path}:0:{context}:{entered}'
             return postscript
     else:
         open_hook = None
