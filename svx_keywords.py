@@ -45,17 +45,25 @@ def svx_encoding(p):
         raise UnicodeDecodeError(f'Couldnt determine the character encoding for {p}')
     return encoding
 
-def svx_open(p, trace):
+# In the following, hook can be a function which accepts the path p
+# and the context, and returns a line of text (typically, a report).
+# The returned value is recorded as a postscript either in the
+# SvxReader class for the initial file open, or in the SvxRecord class
+# for subsequent file openings.  The wrapper code below checks for
+# such a postscript and prints it out at the appropriate time.  This
+# means the file openings are reported _after_ the relevant *include
+# statement.
+
+def svx_open(p, hook=None, context=[]):
     '''open a survex file and reset line counter'''
     if not p.exists():
         raise FileNotFoundError(p)
     else:
         encoding = svx_encoding(p)
         fp = p.open('r', encoding=encoding)
-        if trace:
-            print(f'Visiting {p} ({encoding.upper()})')
+        postscript = hook(p, context) if hook else ''
         line_number = 0
-        return fp, line_number, encoding
+        return fp, line_number, encoding, postscript
 
 def svx_readline(fp, line_number):
     '''read a line from the survex file and increment line counter'''
@@ -76,16 +84,16 @@ def extract_keyword_arguments(clean, keywords, keyword_char):
         keyword, arguments = '', [] # the default position
     return keyword, keyword.upper(), arguments
 
-# Use this for storing results on a line per line basis.
-
 class SvxRecord:
 
     def __init__(self, p, encoding, line_number, context, line):
+        '''Use this for storing results on a line per line basis'''
         self.path = p
         self.encoding = encoding.upper()
         self.line = line_number
         self.context = context
         self.text = line
+        self.postscript = ''
 
 # An iterator for iterating over files that can be called in context.
 # Returns successive lines from the svx source tree, keeping track of
@@ -95,17 +103,17 @@ class SvxRecord:
 
 class SvxReader:
     
-    def __init__(self, svx_file, trace=False, keyword_char='*', comment_char=';'):
+    def __init__(self, svx_file, open_hook=None, keyword_char='*', comment_char=';'):
         '''Instantiate with default properties'''
-        self.keyword_char = keyword_char;
-        self.comment_char = comment_char;
+        self.keyword_char = keyword_char
+        self.comment_char = comment_char
+        self.open_hook = open_hook
         self.p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
         self.top_level = self.p
-        self.trace = trace
         self.context = [] # keep this as a list
         self.keywords = set(['INCLUDE', 'BEGIN', 'END'])
         self.stack = [(None, None, 0, '')] # initialise file stack with a sentinel
-        self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
+        self.fp, self.line_number, self.encoding, self.postscript = svx_open(self.p, hook=self.open_hook)
         self.files_visited = 1
 
     def __iter__(self):
@@ -135,7 +143,7 @@ class SvxReader:
                     self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
                     filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
                     self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
-                    self.fp, self.line_number, self.encoding = svx_open(self.p, self.trace) # open the file and reset the line counter
+                    self.fp, self.line_number, self.encoding, record.postscript = svx_open(self.p, hook=self.open_hook, context=self.context) 
                     self.files_visited = self.files_visited + 1
                 return record
 
@@ -167,7 +175,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
     parser.add_argument('svx_file', help='top level survex file (.svx)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='be verbose about which files are visited')
+    parser.add_argument('-v', '--verbose', action='store_true', help='trace (output) the files that are visited')
     parser.add_argument('-d', '--directories', action='store_true', help='absolute file paths instead of relative ones')
     parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
     parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
@@ -183,12 +191,28 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
     args = parser.parse_args()
 
+    if args.verbose:
+        def open_hook(p, context):
+            '''hook for tracing which files are being visited'''
+            path = str(p.absolute()) if args.directories else str(p)
+            context = '.'.join(context) if args.context else ''
+            if args.color:
+                context = f'{BLUE}{context}{CYAN}' if context else ''
+                postscript = f'{PURPLE}{path}{CYAN}:{GREEN}0{CYAN}:{context}:{RED}<entered>{NC}'
+            else:
+                postscript = f'{path}:0:{context}:entered'
+            return postscript
+    else:
+        open_hook = None
+
     if args.grep: # simple grep mode
         
         flags = re.IGNORECASE if args.ignore_case else 0
         pattern = re.compile(args.grep, flags=flags)
         no_matches = True
-        with SvxReader(args.svx_file) as svx_reader:
+        with SvxReader(args.svx_file, open_hook=open_hook) as svx_reader:
+            if svx_reader.postscript: # catch the trace of the initial file open
+                print(svx_reader.postscript)
             for record in svx_reader:
                 match = pattern.search(record.text)
                 if match:
@@ -205,6 +229,8 @@ if __name__ == "__main__":
                         context = record_context if args.context else ''
                         line = f'{record_path}:{record.line}:{context}:{record_text}'
                     print(line)
+                if record.postscript:
+                    print(record.postscript)
         if no_matches:
             sys.exit(1) # reproduce what grep returns if there are no matches
 
@@ -213,7 +239,7 @@ if __name__ == "__main__":
         if args.keywords:
             keywords = set(args.keywords.upper().split(','))
         else:
-            keywords = set(['INCLUDE', 'BEGIN', 'END', 'FIX', 'ENTRANCE', 'EQUATE', 'CS'])
+            keywords = set(['INCLUDE', 'BEGIN', 'END'])
 
         if args.additional_keywords:
             to_be_added = set(args.additional_keywords.upper().split(','))
@@ -226,7 +252,9 @@ if __name__ == "__main__":
         count = dict.fromkeys(keywords, 0)
         records = []
 
-        with SvxReader(args.svx_file, trace=args.verbose) as svx_reader:
+        with SvxReader(args.svx_file, open_hook=open_hook) as svx_reader:
+            if svx_reader.postscript: # catch the trace of the initial file open
+                print(svx_reader.postscript)
             for record in svx_reader:
                 clean = record.text.split(comment_char)[0].strip() if comment_char in record.text else record.text
                 keyword, uc_keyword, arguments = extract_keyword_arguments(clean, keywords, keyword_char) # preserving case
@@ -252,6 +280,8 @@ if __name__ == "__main__":
                             context = record_context if args.context else ''
                             line = f'{record_path}:{record.line}:{context}:{record_text}'
                         print(line)
+                if record.postscript:
+                    print(record.postscript)
 
         top_level = str(svx_reader.top_level.absolute()) if args.directories else str(svx_reader.top_level)
         files_visited = f'{svx_reader.files_visited} files visited'

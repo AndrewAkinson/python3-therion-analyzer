@@ -66,7 +66,7 @@ positional arguments:
 
 options:
   -h, --help                 show this help message and exit
-  -v, --verbose              be verbose about which files are visited
+  -t, --trace                trace (output) the files that are visited
   -d, --directories          absolute file paths instead of relative ones
   -k, --keywords             a set of keywords to use instead of default
   -a, --additional-keywords  a set of keywords to add to the default
@@ -85,8 +85,7 @@ The file extension (`.svx`) is supplied automatically if missing, as
 in the initial example.
 
 The default action is to search and report all results for keywords
-from the following set: `INCLUDE`, `BEGIN`, `END`, `FIX`, `ENTRANCE`,
-`EQUATE`, and `CS` (which includes `CS OUT`).
+from the following set: `INCLUDE`, `BEGIN`, `END`.
 
 The keyword set can be modified by using the `-k`, `-a` and `-e`
 options as follows.  The `-k` option is used to specify an alternative
