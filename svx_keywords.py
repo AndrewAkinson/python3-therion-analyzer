@@ -58,12 +58,11 @@ def svx_open(p, hook=None, context=[]):
     '''open a survex file and reset line counter'''
     if not p.exists():
         raise FileNotFoundError(p)
-    else:
-        encoding = svx_encoding(p)
-        fp = p.open('r', encoding=encoding)
-        postscript = hook(p, context) if hook else ''
-        line_number = 0
-        return fp, line_number, encoding, postscript
+    encoding = svx_encoding(p)
+    fp = p.open('r', encoding=encoding)
+    postscript = hook(p, context) if hook else ''
+    line_number = 0
+    return fp, line_number, encoding, postscript
 
 def svx_readline(fp, line_number):
     '''read a line from the survex file and increment line counter'''
@@ -124,28 +123,26 @@ class SvxReader:
         '''Return the next line or stop iteration'''
         if not self.fp:
             raise StopIteration
-        else:
-            self.line, self.line_number = svx_readline(self.fp, self.line_number) # read line and increment the line number counter
-            if not self.line:
-                self.fp.close() # we ran out of lines for the file being currently processed
-                self.p, self.fp, self.line_number, self.encoding = self.stack.pop() # back to the including file
-                return next(self)
-            else:
-                self.line = self.line.strip() # remove leading and trailing whitespace then remove comments
-                clean = self.line.split(self.comment_char)[0].strip() if self.comment_char in self.line else self.line
-                keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
-                if uc_keyword == 'BEGIN' and arguments: # add the survex context (assume lower case)
-                    self.context.append(arguments[0].lower())
-                if uc_keyword == 'END' and arguments: # remove the most recent survex context
-                    self.context.pop()
-                record = SvxRecord(self.p, self.encoding, self.line_number, self.context, self.line) # before push
-                if uc_keyword == 'INCLUDE': # process an INCLUDE statement
-                    self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
-                    filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
-                    self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
-                    self.fp, self.line_number, self.encoding, record.postscript = svx_open(self.p, hook=self.open_hook, context=self.context) 
-                    self.files_visited = self.files_visited + 1
-                return record
+        self.line, self.line_number = svx_readline(self.fp, self.line_number) # read line and increment the line number counter
+        if not self.line:
+            self.fp.close() # we ran out of lines for the file being currently processed
+            self.p, self.fp, self.line_number, self.encoding = self.stack.pop() # back to the including file
+            return next(self)
+        self.line = self.line.strip() # remove leading and trailing whitespace then remove comments
+        clean = self.line.split(self.comment_char)[0].strip() if self.comment_char in self.line else self.line
+        keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
+        if uc_keyword == 'BEGIN' and arguments: # add the survex context (assume lower case)
+            self.context.append(arguments[0].lower())
+        if uc_keyword == 'END' and arguments: # remove the most recent survex context
+            self.context.pop()
+        record = SvxRecord(self.p, self.encoding, self.line_number, self.context, self.line) # before push
+        if uc_keyword == 'INCLUDE': # process an INCLUDE statement
+            self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
+            filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
+            self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
+            self.fp, self.line_number, self.encoding, record.postscript = svx_open(self.p, hook=self.open_hook, context=self.context) 
+            self.files_visited = self.files_visited + 1
+        return record
 
     def __enter__(self):
         return self
@@ -175,8 +172,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
     parser.add_argument('svx_file', help='top level survex file (.svx)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='trace (output) the files that are visited')
     parser.add_argument('-d', '--directories', action='store_true', help='absolute file paths instead of relative ones')
+    parser.add_argument('-l', '--list-files', action='store_true', help='trace (output) the files that are visited')
     parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
     parser.add_argument('-a', '--additional-keywords', default=None, help='a set of keywords (--ditto--) to add to the default')
     parser.add_argument('-e', '--excluded-keywords', default=None, help='a set of keywords (--ditto--) to exclude from the default')
@@ -191,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', help='(optional) output to spreadsheet (.ods, .xlsx)')
     args = parser.parse_args()
 
-    if args.verbose:
+    if args.list_files:
         def open_hook(p, context):
             '''hook for tracing which files are being visited'''
             path = str(p.absolute()) if args.directories else str(p)
