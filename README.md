@@ -2,7 +2,8 @@
 
 _Current version:_
 
-v1.2 - (current) reworked file trace mechanism  
+v1.3 - (current) small internal improvements  
+v1.2 - reworked file trace mechanism  
 v1.1 - reworked internals  
 v1.0 - initial working version
 
