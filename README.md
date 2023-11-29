@@ -220,7 +220,9 @@ with open(output_csv, 'w') as f:
 Here we extract the fixed points in a survex file tree, keeping track
 of the co-ordinate reference system (CRS) in force.  We dismantle the
 argument of the `*fix` keyword to extract the station name and x, y
-and z co-ordinates.  The data is accumulated in a list of records
+and z co-ordinates, taking care to allow for the possibility of
+comments by replacing a comment character `;` by a space, then
+splitting on spaces.  The data is accumulated in a list of records
 (tuples) which is converted to a pandas dataframe then written to a
 file as comma-separated values (csv).  The result here is:
 ```
@@ -229,8 +231,8 @@ file as comma-separated values (csv).  The result here is:
 98981,73327,459,hagdyke.W,OSGB:SD,DowProv/HagDyke.svx:14
 ```
 This contains the x, y, z co-ordinates and the full station name,
-followed by the CRS, the file in which the `*fix` appears, and the
-line number within that file.
+followed by the CRS, and finally the file in which the `*fix` appears
+and the line number within that file.
 
 ### Technical notes
 
