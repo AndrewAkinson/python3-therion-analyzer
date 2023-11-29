@@ -210,8 +210,8 @@ with SvxReader('DowProv/DowProv') as svx_reader:
             parts = record.text.removeprefix('*fix').strip().replace(';', ' ').split()
             station = '.'.join(record.context + [parts[0]]) # context + station name
             x, y, z = [int(x) for x in parts[1:4]]
-            records.append((x, y, z, station,  crs, record.path, record.line))
-schema = {'x':int, 'y':int, 'z':int, 'station':str, 'crs':str, 'path':str, 'line':int}
+            records.append((x, y, z, station,  crs, f'{record.path}:{record.line}'))
+schema = {'x':int, 'y':int, 'z':int, 'station':str, 'crs':str, 'location':str}
 df = pd.DataFrame(records, columns=schema.keys()).astype(schema)
 csv = df.to_csv(index=False, header=False)
 with open(output_csv, 'w') as f:
@@ -224,9 +224,9 @@ and z co-ordinates.  The data is accumulated in a list of records
 (tuples) which is converted to a pandas dataframe then written to a
 file as comma-separated values (csv).  The result here is:
 ```
-98378,74300,334,dowcave.dow1.1,OSGB:SD,DowProv/DowCave/DowCave.svx,15
-99213,72887,401,providencepot.ppot1.1,OSGB:SD,DowProv/ProvidencePot/ProvidencePot.svx,12
-98981,73327,459,hagdyke.W,OSGB:SD,DowProv/HagDyke.svx,14
+98378,74300,334,dowcave.dow1.1,OSGB:SD,DowProv/DowCave/DowCave.svx:15
+99213,72887,401,providencepot.ppot1.1,OSGB:SD,DowProv/ProvidencePot/ProvidencePot.svx:12
+98981,73327,459,hagdyke.W,OSGB:SD,DowProv/HagDyke.svx:14
 ```
 This contains the x, y, z co-ordinates and the full station name,
 followed by the CRS, the file in which the `*fix` appears, and the
