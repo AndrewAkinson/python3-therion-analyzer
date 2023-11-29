@@ -236,7 +236,7 @@ and the line number within that file.  As it stands this assumes there
 are no spaces after the keyword character `*` and thus only finds
 `*fix` cases and not `* fix` with a space.  With a bit more care this
 could be fixed up, and one can check for such edge cases by running
-```bash
+```
 $ ./svx_keywords.py -ck fix DowProv/DowProv
 ```
 
