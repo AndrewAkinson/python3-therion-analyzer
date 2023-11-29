@@ -228,6 +228,9 @@ file as comma-separated values (csv).  The result here is:
 99213,72887,401,providencepot.ppot1.1,OSGB:SD,DowProv/ProvidencePot/ProvidencePot.svx,12
 98981,73327,459,hagdyke.W,OSGB:SD,DowProv/HagDyke.svx,14
 ```
+This contains the x, y, z co-ordinates and the full station name,
+followed by the CRS, the file in which the `*fix` appears, and the
+line number within that file.
 
 ### Technical notes
 
