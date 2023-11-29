@@ -221,7 +221,7 @@ Here we extract the fixed points in a survex file tree, keeping track
 of the co-ordinate reference system (CRS) in force.  We dismantle the
 argument of the `*fix` keyword to extract the station name and x, y
 and z co-ordinates, taking care to allow for the possibility of
-comments by replacing a comment character `;` by a space, then
+comments by replacing a comment character by a space, then
 splitting on spaces.  The data is accumulated in a list of records
 (tuples) which is converted to a pandas dataframe then written to a
 file as comma-separated values (csv).  The result here is:
