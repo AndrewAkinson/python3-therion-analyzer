@@ -195,6 +195,40 @@ with SvxReader('DowProv/DowProv') as svx_reader:
 More details of the constructor and function calls can be found
 inside the script itself.
 
+#### Longer example: extracting fixed points
+
+```python
+import pandas as pd
+from svx_keywords import SvxReader
+svx_file, output_csv = 'DowProv/DowProv.svx', 'DowProv_fixes.csv' # <-- change these
+records = [] # will grow as records are added
+with SvxReader('DowProv/DowProv') as svx_reader:
+    for record in svx_reader:
+        if record.text.startswith('*cs') and not record.text.startswith('*cs out'):
+            crs = record.text.removeprefix('*cs').strip() # record the CRS
+        if record.text.startswith('*fix'):
+            parts = record.text.removeprefix('*fix').strip().replace(';', ' ').split()
+            station = '.'.join(record.context + [parts[0]]) # context + station name
+            x, y, z = [int(x) for x in parts[1:4]]
+            records.append((x, y, z, station,  crs, record.path, record.line))
+schema = {'x':int, 'y':int, 'z':int, 'station':str, 'crs':str, 'path':str, 'line':int}
+df = pd.DataFrame(records, columns=schema.keys()).astype(schema)
+csv = df.to_csv(index=False, header=False)
+with open(output_csv, 'w') as f:
+    f.write(csv)
+```
+Here we extract the fixed points in a survex file tree, keeping track
+of the co-ordinate reference system (CRS) in force.  We dismantle the
+argument of the `*fix` keyword to extract the station name and x, y
+and z co-ordinates.  The data is accumulated in a list of records
+(tuples) which is converted to a pandas dataframe then written to a
+file as comma-separated values (csv).  The result here is:
+```
+98378,74300,334,dowcave.dow1.1,OSGB:SD,DowProv/DowCave/DowCave.svx,15
+99213,72887,401,providencepot.ppot1.1,OSGB:SD,DowProv/ProvidencePot/ProvidencePot.svx,12
+98981,73327,459,hagdyke.W,OSGB:SD,DowProv/HagDyke.svx,14
+```
+
 ### Technical notes
 
 Some complications arise because survex is quite liberal about what
