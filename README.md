@@ -234,9 +234,11 @@ This contains the x, y, z co-ordinates and the full station name,
 followed by the CRS, and finally the file in which the `*fix` appears
 and the line number within that file.  As it stands this assumes there
 are no spaces after the keyword character `*` and thus only finds
-`*fix` and not `* fix` with a space.  With a bit more care this could
-be fixed up, and one can check for such edge cases by running
-`./svx_keywords.py -ck fix DowProv/DowProv`.
+`*fix` cases and not `* fix` with a space.  With a bit more care this
+could be fixed up, and one can check for such edge cases by running
+```bash
+$ ./svx_keywords.py -ck fix DowProv/DowProv
+```
 
 ### Technical notes
 
