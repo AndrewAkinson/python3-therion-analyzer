@@ -237,9 +237,9 @@ and the line number within that file.
 As it stands this piece of code assumes there are no spaces after the
 keyword character `*`, and also that the keyword is lower case.  With 
 a bit more care this could be fixed up, and in any
-case one can check for such edge cases by running:
+case one can check for such cases by running:
 ```
-$ ./svx_keywords.py -ck fix DowProv/DowProv
+$ ./svx_keywords.py -ck cs,fix DowProv/DowProv
 ```
 
 ### Technical notes
