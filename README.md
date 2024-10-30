@@ -1,5 +1,11 @@
 ## Python code to analyze survex data source files
 
+This is a copy with a quick change to allow it to work with Therion files.
+The logic that worked for svx files breaks for Therion, there is no * on 
+comands and input is used for both th and th2 files, so the automatic 
+adding of the extention caused an infinate loop. Currently only works for
+files with the extension explicitly in the .th files
+
 _Current version:_
 
 v1.3 - (current) small internal improvements  
