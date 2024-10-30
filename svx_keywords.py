@@ -70,8 +70,8 @@ def svx_readline(fp, line_number):
 
 def extract_keyword_arguments(clean, keywords, keyword_char):
     '''Extract a keyword and arguments from a cleaned up line'''
-    if clean and clean[0] == keyword_char: # detect keyword by presence of keyword character
-        clean_list = clean[1:].split() # drop the keyword char and split on white space
+    if clean: #and clean[0] == keyword_char: # detect keyword by presence of keyword character
+        clean_list = clean.split() # drop the keyword char and split on white space
         for keyword in keywords: # identify the keyword from the list of possible ones
             if clean_list[0].upper() == keyword:
                 keyword = clean_list[0] # the first entry, preserving case
@@ -107,10 +107,10 @@ class SvxReader:
         self.keyword_char = keyword_char
         self.comment_char = comment_char
         self.open_hook = open_hook
-        self.p = Path(svx_file).with_suffix('.svx') # add the suffix if not already present
+        self.p = Path(svx_file) #.with_suffix('.th') # add the suffix if not already present
         self.top_level = self.p
         self.context = [] # keep this as a list
-        self.keywords = set(['INCLUDE', 'BEGIN', 'END'])
+        self.keywords = set(['INPUT', 'SURVEY', 'ENDSURVEY'])
         self.stack = [(None, None, 0, '')] # initialise file stack with a sentinel
         self.fp, self.line_number, self.encoding, self.postscript = svx_open(self.p, hook=self.open_hook)
         self.files_visited = 1
@@ -131,15 +131,15 @@ class SvxReader:
         self.line = self.line.strip() # remove leading and trailing whitespace then remove comments
         clean = self.line.split(self.comment_char)[0].strip() if self.comment_char in self.line else self.line
         keyword, uc_keyword, arguments = extract_keyword_arguments(clean, self.keywords, self.keyword_char) # preserving case
-        if uc_keyword == 'BEGIN' and arguments: # add the survex context (assume lower case)
+        if uc_keyword == 'SURVEY' and arguments: # add the survex context (assume lower case)
             self.context.append(arguments[0].lower())
-        if uc_keyword == 'END' and arguments: # remove the most recent survex context
+        if uc_keyword == 'ENDSURVEY': #and arguments: # remove the most recent survex context
             self.context.pop()
         record = SvxRecord(self.p, self.encoding, self.line_number, self.context, self.line) # before push
-        if uc_keyword == 'INCLUDE': # process an INCLUDE statement
+        if uc_keyword == 'INPUT': # process an INCLUDE statement
             self.stack.append((self.p, self.fp, self.line_number, self.encoding)) # push onto stack
             filename = ' '.join(arguments).strip('"').replace('\\', '/') # remove any quotes and replace backslashes
-            self.p = Path(self.p.parent, filename).with_suffix('.svx') # the new path (add the suffix if not already present)
+            self.p = Path(self.p.parent, filename) #.with_suffix('.th' )  #the new path (add the suffix if not already present)
             self.fp, self.line_number, self.encoding, record.postscript = svx_open(self.p, hook=self.open_hook, context=self.context) 
             self.files_visited = self.files_visited + 1
         return record
@@ -168,10 +168,11 @@ if __name__ == "__main__":
     import re
     import argparse
 
-    keyword_char, comment_char = '*', ';' # for the time being
+    keyword_char, comment_char = '', '#' # for the time being
 
     parser = argparse.ArgumentParser(description='Analyze a survex data source tree.')
     parser.add_argument('svx_file', help='top level survex file (.svx)')
+#    parser.add_argument('-t', ' --therion',  action='store_true',  help='use therion (.th) files instead of survex(.svx)')
     parser.add_argument('-d', '--directories', action='store_true', help='absolute file paths instead of relative ones')
     parser.add_argument('-l', '--list-files', action='store_true', help='trace (output) the files that are visited')
     parser.add_argument('-k', '--keywords', default=None, help='a set of keywords (comma-separated, case insensitive) to use instead of default')
@@ -237,7 +238,7 @@ if __name__ == "__main__":
         if args.keywords:
             keywords = set(args.keywords.upper().split(','))
         else:
-            keywords = set(['INCLUDE', 'BEGIN', 'END'])
+            keywords = set(['INPUT', 'SURVEY', 'ENDSURVEY'])
 
         if args.additional_keywords:
             to_be_added = set(args.additional_keywords.upper().split(','))
